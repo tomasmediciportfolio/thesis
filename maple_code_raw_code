@@ -1,0 +1,1864 @@
+restart:
+with(combinat):
+with(GroupTheory):
+with(plots):
+with(ListTools):
+with(Statistics):
+with(ArrayTools):
+with(LinearAlgebra):
+with(Iterator):
+with(MTM):
+with(GraphTheory):
+with(Bits):
+
+currentdir("/Users/tomasmedici/Dropbox/T - Studie/A_Speciale/Maple/z_filer/exp_16_f"):
+
+RowCol := proc(diagonal,matrix)
+  local j,k:
+  global Rw,Cl,rw,cl,dim,count:
+  dim   := RowDimension(matrix):
+  Rw := []:
+  Cl := []:
+  count := 0:
+  for k from 1 to dim do
+    if matrix[diagonal,k]<>0 then
+      if matrix[diagonal,k]=2 then
+        Rw := [op(Rw), [k,matrix[diagonal,k]]]:
+        count := count+1:
+      else
+      Rw := [op(Rw), [k,matrix[diagonal,k]]]:
+      fi:
+    fi:
+  od:
+  for j from 1 to dim do
+    if matrix[j,diagonal]<>0 then
+      Cl := [op(Cl), [j,matrix[j,diagonal]]]:
+    fi:
+  od:
+  rw := numelems(Rw):
+  cl := numelems(Cl):
+  return([Rw,Cl]);
+end:
+
+moveR_possible := proc(diagonal,matrix)
+  local c:
+  c := -1:
+  if cl=0 and rw=0 then
+  elif matrix[diagonal,diagonal]=0 then
+    if cl=0 and count=0 then
+      c := 0:
+      elif cl=1 then
+      if rw=0 then
+      elif rw=1 then
+        if Rw[1][2]>1 then
+        elif Cl[1][2]=1 then
+          c := 1:
+        elif Cl[1][2]=2 then
+          c := 2:
+        elif Cl[1][2]>2 then
+          c := 3:
+        fi:
+      else
+      fi:
+    elif cl>1 and rw=0 then
+    else
+    fi:
+  else
+  fi:
+  return(c):
+end:
+
+moveR:= proc(d,m)
+  local C,D,m_temp,Rs,R1,R2,R_1,i,j,k:
+  m_temp := Matrix(m):
+  if moveR_possible(d,m)=-1 then
+  elif moveR_possible(d,m)=0 then
+    C := DeleteRow(m,d):
+    D := DeleteColumn(C,d):
+    return(D):
+  elif moveR_possible(d,m)=1 then
+    if m[Cl[1][1],Rw[1][1]]=2 then
+      m_temp[Cl[1][1],Rw[1][1]] := 2:
+      C := DeleteRow(m_temp,d):
+      D := DeleteColumn(C,d):
+      return(D):
+    elif m[Cl[1][1],Rw[1][1]]=1 then
+      m_temp[Cl[1][1],Rw[1][1]] := 3:
+      C := DeleteRow(m_temp,d):
+      D := DeleteColumn(C,d):
+      return(D):
+    elif m[Cl[1][1],Rw[1][1]]>2 then
+      m_temp[Cl[1][1],Rw[1][1]] := m[Cl[1][1],Rw[1][1]]+1:
+      C := DeleteRow(m_temp,d):
+      D := DeleteColumn(C,d):
+      return(D):
+    else
+      m_temp[Cl[1][1],Rw[1][1]] := 1:
+      C := DeleteRow(m_temp,d):
+      D := DeleteColumn(C,d):
+      return(D):
+    fi:
+  elif moveR_possible(d,m)=2 then
+    m_temp[Cl[1][1],Rw[1][1]] := 2;
+    C := DeleteRow(m_temp,d):
+    D := DeleteColumn(C,d):
+    return(D):
+  elif moveR_possible(d,m)=3 then
+    if m[Cl[1][1],Rw[1][1]]=2 then
+      m_temp[Cl[1][1],Rw[1][1]] := 2:
+      C := DeleteRow(m_temp,d):
+      D := DeleteColumn(C,d):
+      return(D):
+    elif m[Cl[1][1],Rw[1][1]]=1 then
+      m_temp[Cl[1][1],Rw[1][1]] := Cl[1][2]+1:
+      C := DeleteRow(m_temp,d):
+      D := DeleteColumn(C,d):
+      return(D):
+    elif m[Cl[1][1],Rw[1][1]]>2 then
+      m_temp[Cl[1][1],Rw[1][1]] := m[Cl[1][1],Rw[1][1]]+Cl[1][2]-1:
+      C := DeleteRow(m_temp,d):
+      D := DeleteColumn(C,d):
+      return(D):
+    else
+      m_temp[Cl[1][1],Rw[1][1]] := Cl[1][2]:
+      C := DeleteRow(m_temp,d):
+      D := DeleteColumn(C,d):
+      return(D):
+    fi:
+  fi:
+end:
+
+RowCol := proc(diagonal,matrix)
+  local j,k:
+  global Rw,Cl,rw,cl,dim,count:
+  dim   := RowDimension(matrix):
+  Rw := []:
+  Cl := []:
+  count := 0:
+  for k from 1 to dim do
+    if matrix[diagonal,k]<>0 then
+      if matrix[diagonal,k]=2 then
+        Rw := [op(Rw), [k,matrix[diagonal,k]]]:
+        count := count+1:
+      else
+      Rw := [op(Rw), [k,matrix[diagonal,k]]]:
+      fi:
+    fi:
+  od:
+  for j from 1 to dim do
+    if matrix[j,diagonal]<>0 then
+      Cl := [op(Cl), [j,matrix[j,diagonal]]]:
+    fi:
+  od:
+  rw := numelems(Rw):
+  cl := numelems(Cl):
+  return([Rw,Cl]);
+end:
+
+moveO_possible := proc(diagonal,matrix)
+  local i:
+  global c_4,c_5,c_6:
+  c_4 := 0:
+  c_5 := 0:
+  c_6 := 0:
+  for i from 1 to rw do
+    if Rw[i][2]=2 then
+      c_4 := c_4+1:
+    elif Rw[i][2]=3 then
+      c_5 := c_5+1:
+    fi:
+  od:
+  if rw=0 and cl=0 then
+  elif rw=0 then
+  elif rw=1 and c_5=0 then
+  elif c_4>1 then
+  else
+
+    c_6 := 1:
+  fi:
+  return(c_6):
+end:
+
+moveO := proc(d,m)
+  local L1,L2,L3,m_temp,extO,c,i1,i2,j,k,n1,n2,n3,n4,n5:
+  L1   := []:
+  L2   := []:
+  L3   := []:
+  c    := 0:
+  if moveO_possible(d,m)=1 then
+    extO   := rw+c_5-1:
+    m_temp := Matrix(dim+extO):
+
+    for i1 from 1 to dim do
+      for i2 from 1 to dim do
+        L1 := [op(L1), [i1,i2]]:
+      od:
+    od:
+
+    for j in L1 do
+      if j[1]=d or j[2]=d then
+        L2 := [op(L2), j]:
+      else
+        L3 := [op(L3), j]:
+      fi:
+    od:
+
+    for k in L3 do
+      if k[1]<d and k[2]<d then
+        m_temp[k[1],k[2]] := m[k[1],k[2]]:
+      elif k[1]<d and k[2]>d then
+        m_temp[k[1],k[2]+extO] := m[k[1],k[2]]:
+      elif k[1]>d and k[2]<d then
+        m_temp[k[1]+extO,k[2]] := m[k[1],k[2]]:
+      elif k[1]>d and k[2]>d then
+        m_temp[k[1]+extO,k[2]+extO] := m[k[1],k[2]]:
+      fi:
+    od:
+
+    for n1 in L2 do
+      if n1[1]<d then
+        for n2 from 0 to extO do
+          m_temp[n1[1],n1[2]+n2] := m[n1[1],n1[2]]:
+        od:
+      elif n1[1]>d then
+        for n3 from 0 to extO do
+          m_temp[n1[1]+extO,n1[2]+n3] := m[n1[1],n1[2]]:
+        od:
+      else
+        if n1[2]<d then
+          if m[n1[1],n1[2]]=3 then
+            m_temp[n1[1]+c,n1[2]]   := 1:
+            m_temp[n1[1]+c+1,n1[2]] := 1:
+            c := c+2:
+          elif m[n1[1],n1[2]]<>0 then
+            m_temp[n1[1]+c,n1[2]]   := m[n1[1],n1[2]]:
+            c := c+1:
+          fi:
+        elif n1[2]=d then
+          if m[n1[1],n1[2]]=3 then
+            for n4 from 0 to extO do
+              m_temp[n1[1]+c,n1[2]+n4]   := 1:
+              m_temp[n1[1]+c+1,n1[2]+n4] := 1:
+            od:
+            c := c+2:
+          elif m[n1[1],n1[2]]<>0 then
+            for n5 from 0 to extO do
+              m_temp[n1[1]+c,n1[2]+n5]   := m[n1[1],n1[2]]:
+            od:
+            c := c+1:
+          fi:
+        else
+          if m[n1[1],n1[2]]=3 then
+            m_temp[n1[1]+c,n1[2]+extO]   := 1:
+            m_temp[n1[1]+c+1,n1[2]+extO] := 1:
+            c := c+2:
+          elif m[n1[1],n1[2]]<>0 then
+            m_temp[n1[1]+c,n1[2]+extO]   := m[n1[1],n1[2]]:
+            c := c+1:
+          fi:
+        fi:
+      fi:
+    od:
+    return(m_temp):
+  else
+  fi:
+end:
+
+RowCol := proc(diagonal,matrix)
+  local j,k:
+  global Rw,Cl,rw,cl,dim,count:
+  dim   := RowDimension(matrix):
+  Rw := []:
+  Cl := []:
+  count := 0:
+  for k from 1 to dim do
+    if matrix[diagonal,k]<>0 then
+      if matrix[diagonal,k]=2 then
+        Rw := [op(Rw), [k,matrix[diagonal,k]]]:
+        count := count+1:
+      else
+      Rw := [op(Rw), [k,matrix[diagonal,k]]]:
+      fi:
+    fi:
+  od:
+  for j from 1 to dim do
+    if matrix[j,diagonal]<>0 then
+      Cl := [op(Cl), [j,matrix[j,diagonal]]]:
+    fi:
+  od:
+  rw := numelems(Rw):
+  cl := numelems(Cl):
+  return([Rw,Cl]);
+end:
+
+moveI_possible := proc(diagonal,matrix)
+  local i:
+  global c_1,c_2,c_3:
+  c_1 := 0:
+  c_2 := 0:
+  c_3 := 0:
+  for i from 1 to cl do
+    if Cl[i][2]=2 then
+      c_1 := c_1+1:
+    elif Cl[i][2]=3 then
+      c_2 := c_2+1:
+    fi:
+  od:
+  if cl=0 and rw=0 then
+  elif cl=0 or count>0 or rw=0 then
+  elif cl=1 and c_2=0 then
+  else
+
+    c_3 := 1:
+  fi:
+  return(c_3):
+end:
+
+moveI := proc(d,m)
+  local L1,L2,L3,m_temp,extI,c,i1,i2,j,k,n1,n2,n3,n4,n5:
+  L1   := []:
+  L2   := []:
+  L3   := []:
+  c    := 0:
+  if moveI_possible(d,m)=1 then
+    extI   := cl+c_2-1:
+    m_temp := Matrix(dim+extI):
+
+    for i1 from 1 to dim do
+      for i2 from 1 to dim do
+        L1 := [op(L1), [i1,i2]]:
+      od:
+    od:
+
+    for j in L1 do
+      if j[1]=d or j[2]=d then
+        L2 := [op(L2), j]:
+      else
+        L3 := [op(L3), j]:
+      fi:
+    od:
+
+    for k in L3 do
+      if k[1]<d and k[2]<d then
+        m_temp[k[1],k[2]] := m[k[1],k[2]]:
+      elif k[1]<d and k[2]>d then
+        m_temp[k[1],k[2]+extI] := m[k[1],k[2]]:
+      elif k[1]>d and k[2]<d then
+        m_temp[k[1]+extI,k[2]] := m[k[1],k[2]]:
+      elif k[1]>d and k[2]>d then
+        m_temp[k[1]+extI,k[2]+extI] := m[k[1],k[2]]:
+      fi:
+    od:
+
+    for n1 in L2 do
+      if n1[2]<d then
+        for n2 from 0 to extI do
+          m_temp[n1[1]+n2,n1[2]] := m[n1[1],n1[2]]:
+        od:
+      elif n1[2]>d then
+        for n3 from 0 to extI do
+          m_temp[n1[1]+n3,n1[2]+extI] := m[n1[1],n1[2]]:
+        od:
+      else
+        if n1[1]<d then
+          if m[n1[1],n1[2]]=3 then
+            m_temp[n1[1],n1[2]+c]   := 1:
+            m_temp[n1[1],n1[2]+c+1] := 1:
+            c := c+2:
+          elif m[n1[1],n1[2]]<>0 then
+            m_temp[n1[1],n1[2]+c]   := m[n1[1],n1[2]]:
+            c := c+1:
+          fi:
+        elif n1[1]=d then
+          if m[n1[1],n1[2]]=3 then
+            for n4 from 0 to extI do
+              m_temp[n1[1]+n4,n1[2]+c]   := 1:
+              m_temp[n1[1]+n4,n1[2]+c+1] := 1:
+            od:
+            c := c+2:
+          elif m[n1[1],n1[2]]<>0 then
+            for n5 from 0 to extI do
+              m_temp[n1[1]+n5,n1[2]+c]   := m[n1[1],n1[2]]:
+            od:
+            c := c+1:
+          fi:
+        else
+          if m[n1[1],n1[2]]=3 then
+            m_temp[n1[1]+extI,n1[2]+c]   := 1:
+            m_temp[n1[1]+extI,n1[2]+c+1] := 1:
+            c := c+2:
+          elif m[n1[1],n1[2]]<>0 then
+            m_temp[n1[1]+extI,n1[2]+c]   := m[n1[1],n1[2]]:
+            c := c+1:
+          fi:
+        fi:
+      fi:
+    od:
+    return(m_temp):
+  else
+  fi:
+end:
+
+hsIndex := proc(dim,n,index)
+  local L2,L3,i,j,k,l,s,p:
+  global L1,L4:
+  L1 := convert(convert([seq(Sort(i), i in permute(dim,n))],set),list) :
+  L2 := []:
+  L3 := []:
+  L4 := []:
+  for j in L1 do
+    L2 := [j]:
+      for k in L2 do
+      L2 := [op(L2), k]:
+      L2 := Flatten(L2):
+      L2 := Sort(L2):
+    od:
+    L3 := [op(L3), L2]:
+  od:
+  for l in L3 do
+    p := permute(l,2):
+    L4 := [op(L4), p]:
+  od:
+  return(L4[index]);
+end:
+
+elmsIndex := proc(dim)
+  local listeI,i1,i2:
+  listeI := []:
+  for i1 from 1 to dim do
+    for i2 from 1 to dim do
+      listeI := [op(listeI), [i1,i2]]:
+    od:
+  od:
+  return(listeI);
+end:
+
+hereditaryCheck := proc(m,n,index)
+  local dim,list1,list2,list3,list4,L_index,i,j,k,c:
+  dim := RowDimension(m):
+  list1 := hsIndex(dim,n,index):
+  list2 := elmsIndex(dim):
+  L_index := L1[index]:
+  list3 := []:
+  c := 0:
+  for i in L_index do
+    for j in list2 do
+      if j[1]=i then
+        list3 := [op(list3), j]:
+      fi:
+    od:
+  od:
+  list4 := convert(convert(list3,set) minus convert(list1,set),list):
+
+  for k in list4 do
+    if m[k[1],k[2]]=0 then
+    else
+      c := c+1:
+    fi
+  od:
+  return(c):
+end:
+
+saturatedCheck := proc(m,n,index)
+  local dim,list1,list2,list3,list4,list5,list6,list7,list8,list9,list10,A,L_index,L_rest,i,j,k,l,o,p,q,s,c,d,bv,e,f:
+  dim := RowDimension(m):
+  list1 := hsIndex(dim,n,index):
+  list2 := elmsIndex(dim):
+  L_index := L1[index]:
+  L_rest := convert((convert([seq(i, i=1..dim)],set) minus convert(L_index,set)),list):
+  list3 := []:
+  list5 := []:
+  list6 := []:
+  list7 := []:
+  list8 := []:
+  list9 := [[[0]]]:
+  list10 := []:
+  c := 0:
+  d := 0:
+  e := 0:
+  f := 0:
+  for i in L_index do
+    for j in list2 do
+      if j[2]=i then
+        list3 := [op(list3), j]:
+      fi:
+    od:
+  od:
+  list4 := convert(convert(list3,set) minus convert(list1,set),list):
+
+  for k in L_rest do
+    for l in L_index do
+      list5 := [op(list5), m[k,l]]:
+    od:
+    if 2 in list5 then
+      c := 2:
+    elif 1 in list5 or 3 in list5 or 4 in list5 then
+      c := 1:
+    fi:
+    if c=0 then
+      d := 1:
+    else
+      for o in L_rest do
+        list6 := [op(list6),m[k,o]]:
+      od:
+      if c=1 and (1 in list6 or 2 in list6 or 3 in list6 or 4 in list6) then
+        d := 1:
+      elif c=2 and 2 in list6 then
+        d := 1:
+      elif c=2 and (1 in list6 or 3 in list6 or 4 in list6) then
+        d := 2:
+      elif c=2 and 0 in list6 then
+        d := 1:
+      else
+      fi:
+    fi:
+    list7 := [op(list7),[d,k]]:
+    c := 0:
+    d := 0:
+    list5 := []:
+    list6 := []:
+  od:
+  for p in list7 do
+    if p[1]=0 then
+      e := e+1:
+    elif p[1]=1 then
+      f := f+1:
+    else
+      list8 := [op(list8), p[2]]:
+    fi:
+  od:
+
+  if e>0 then
+    return([]):
+  elif numelems(list8)>0 then
+    for q from 1 to numelems(list8) do
+      A := convert(convert([seq(Sort(r), r in permute(list8,q))],set),list):
+      list9 := [op(list9), A]:
+    od:
+    list9 := FlattenOnce(list9):
+    for s in list9 do
+      list10 := [op(list10),[L_index,s]]:
+    od:
+    return(list10):
+  else
+    return([[L_index,[0]]]):
+  fi:
+  print(L_index);
+end:
+
+idealIndex := proc(m)
+  local listI,dim,i,j,k,a,d:
+  listI := []:
+  dim := RowDimension(m):
+  for i from 1 to dim-1 do
+    a := binomial(dim,i):
+    for j from 1 to a do
+      if hereditaryCheck(m,i,j)=0 then
+        d := saturatedCheck(m,i,j):
+        listI := [op(listI),d]:
+      fi:
+    od:
+  od:
+  listI := FlattenOnce(listI):
+  return(numelems(listI));
+end:
+
+idealStructure := proc(m)
+  local listI,dim,i,j,k,a,d:
+  listI := []:
+  dim := RowDimension(m):
+  for i from 1 to dim-1 do
+    a := binomial(dim,i):
+    for j from 1 to a do
+      if hereditaryCheck(m,i,j)=0 then
+        d := saturatedCheck(m,i,j):
+        listI := [op(listI),d]:
+      fi:
+    od:
+  od:
+  listI := FlattenOnce(listI):
+  return(listI);
+end:
+
+isIdealSmaller := proc(a,b)
+  local i,j,h,s:
+  h := 0:
+  s := 0:
+  for i in a[1] do
+    if i in b[1] then
+    else
+      h := h + 1:
+    fi:
+  od:
+  for j in a[2] do
+    if j<>0 then
+      if j in Flatten(b) then
+      else
+        s := s + 1:
+      fi:
+    fi:
+  od:
+  if h=0 and s=0 then
+    return(1):
+  else
+    return(0):
+  fi:
+end:
+
+orderIdealList := proc(m)
+  local L_wh,L_wh_temp,L_ord,i,j,c,el,ideal_no:
+  L_wh     := idealStructure(m):
+  ideal_no := idealIndex(m):
+  L_ord    := <0>:
+  c        := 0:
+  while ColumnDimension(L_wh)>0 do
+    for i from 1 to ColumnDimension(L_wh) do
+      el := L_wh[i]:
+      L_wh_temp := subsop(i=NULL, L_wh):
+      if member(1,[seq(isIdealSmaller(j,el), j in L_wh_temp)]) then
+      else
+        L_ord(1,ideal_no-c) := el:
+        c := c+1:
+        L_wh := subsop(i=NULL, L_wh):
+        break:
+      fi:
+    od:
+  od:
+  if L_ord[1]=0 then
+    return([]):
+  else
+    return(L_ord):
+  fi:
+end:
+
+kTheory := proc(m)
+  local A,a,Ano,ano,K_mT,K_SM,ktheory,i:
+  A   := partitionMatrix(m)[1]:
+  a   := partitionMatrix(m)[2]:
+  Ano := numelems(A):
+  ano := numelems(a):
+  if Ano>0 then
+    K_mT := transpose(buildK_matrix(m,A,a,Ano,ano,0)):
+    for i from 1 to Ano do
+      K_mT[i,i] := K_mT[i,i]-1:
+    od:
+    K_SM := (SmithForm(K_mT)):
+    ktheory := calK(K_SM,A,a,Ano,ano,0):
+  else
+    ktheory := calK([],A,a,Ano,ano,0):
+  fi:
+  return(ktheory):
+end:
+
+RowCol_K := proc(diagonal,matrix)
+  local Rw,Cl,dim,j,k:
+  dim   := RowDimension(matrix):
+  Rw := []:
+  Cl := []:
+  for k from 1 to dim do
+    if matrix[diagonal,k]<>0 then
+      Rw := [op(Rw), [k,matrix[diagonal,k]]]:
+    fi:
+  od:
+  for j from 1 to dim do
+    if matrix[j,diagonal]<>0 then
+      Cl := [op(Cl), [j,matrix[j,diagonal]]]:
+    fi:
+  od:
+  return([Rw,Cl]):
+end:
+
+partitionMatrix := proc(m)
+  local A,a,dim,inf,RC,Rw,rw,Cl,cl,i,j:
+  dim := RowDimension(m):
+  A := []:
+  a := []:
+  for i from 1 to dim do
+    inf:= 0:
+    RC := RowCol_K(i,m):
+    Rw := RC[1]:
+    rw := numelems(Rw):
+    Cl := RC[2]:
+    cl := numelems(Cl):
+    for j in Rw do
+      if j[2]=2 then
+        inf := -1:
+      fi:
+    od:
+      if rw=0 or inf=-1 then
+        a := [op(a), i]:
+      else
+        A := [op(A), i]:
+      fi:
+  od:
+  return([A,a]):
+end:
+
+findCoor := proc(dim,pair)
+  local Ix,n,i,c,coor:
+  n  := numelems(pair):
+  Ix := convert(convert([seq(Sort(i), i in permute(dim,n))],set),list):
+  c  := 0:
+  if n=0 then
+  else
+    for i from 1 to numelems(Ix) do
+      if Ix[i]=pair then
+        c := i:
+      fi:
+    od:
+    coor := hsIndex(dim,n,c):
+  fi:
+end:
+
+buildK_matrix := proc(m,A,a,Ano,ano,s)
+  local dim,K_m,Kdim,coor,i,j,c,p1,p2,k,l:
+  dim := RowDimension(m):
+  K_m := Matrix(Ano,dim+s):
+  Kdim := [Ano,dim]:
+  coor := findCoor(dim,A):
+  c   := 1:
+  if Ano>0 then
+    for i from 1 to Ano do
+      for j from 1 to Ano do
+        p1 := coor[c,1]:
+        p2 := coor[c,2]:
+        if m[p1,p2]<2 then
+          K_m[i,j]:= m[p1,p2]:
+          c := c+1:
+        else
+          K_m[i,j]:= m[p1,p2]-1:
+          c := c+1:
+        fi:
+      od:
+    od:
+    for k from 1 to Ano do
+      for l from 1 to ano do
+        if m[A[k],a[l]]<2 then
+          K_m[k,l+Ano]:= m[A[k],a[l]]:
+        else
+          K_m[k,l+Ano]:= m[A[k],a[l]]-1:
+        fi:
+      od
+    od:
+  fi:
+  return(K_m):
+end:
+
+calK := proc(K_m,A,a,Ano,ano,s)
+  local coKer,ker,m,n,count,i,j,k,kk,l:
+  coKer := []:
+  ker   := []:
+  count := 0:
+  if Ano=0 then
+    for i from 1 to (ano+s) do
+      coKer := [op(coKer),1]:
+    od:
+    ker := []:
+  else
+    m := RowDimension(K_m):
+    n := ColumnDimension(K_m):
+    for j from 1 to Ano do
+      if K_m[j,j]=1 then
+        count := count+1:
+      elif K_m[j,j]>1 then
+        coKer := [op(coKer),K_m[j,j]]:
+        count := count+1:
+      else
+        coKer := [op(coKer),1]:
+      fi:
+    od:
+    for k from 1 to ano do
+      coKer := [op(coKer),1]:
+    od:
+    for kk from 1 to s do
+      coKer := [op(coKer),1]:
+    od:
+    for l from 1 to (n-count) do
+      ker := [op(ker),1]:
+    od:
+  fi:
+  return([coKer,ker]):
+end:
+
+kTheory_I := proc(m)
+  local dim,idealOrd,iNO,matrixI,kT_list,m_temp,d,num,coor,K_cal,c,p1,p2,s,i,j,k,l,o,r:
+  dim      := ColumnDimension(m):
+  idealOrd := orderIdealList(m):
+  iNO      := numelems(idealOrd):
+  matrixI  := Matrix(iNO):
+  kT_list  := []:
+  if iNO=0 then
+  elif iNO=1 then
+      c := 1:
+      if idealOrd[1][2,1]=0 then
+        d    := idealOrd[1][1]:
+        num  := numelems(d):
+        coor := findCoor(dim,d):
+        m_temp := Matrix(num):
+        for j from 1 to num do
+          for k from 1 to num do
+            p1          := coor[c,1]:
+            p2          := coor[c,2]:
+            m_temp[j,k] := m[p1,p2]:
+            c           := c+1:
+          od:
+        od:
+        K_cal   := kTheory_I_aux(m_temp,0):
+        kT_list := [op(kT_list),K_cal]:
+      else
+        d    := idealOrd[1][1]:
+        num  := numelems(d):
+        coor := findCoor(dim,d):
+        m_temp := Matrix(num):
+        s    := numelems(idealOrd[1][2]):
+        for j from 1 to num do
+          for k from 1 to num do
+            p1          := coor[c,1]:
+            p2          := coor[c,2]:
+            m_temp[j,k] := m[p1,p2]:
+            c           := c+1:
+          od:
+        od:
+        K_cal := kTheory_I_aux(m_temp,s):
+        kT_list := [op(kT_list),K_cal]:
+      fi:
+  else
+    for i from 1 to iNO do
+      c := 1:
+      if idealOrd[1,i][2,1]=0 then
+        d    := idealOrd[1,i][1]:
+        num  := numelems(d):
+        coor := findCoor(dim,d):
+        m_temp := Matrix(num):
+        for j from 1 to num do
+          for k from 1 to num do
+            p1          := coor[c,1]:
+            p2          := coor[c,2]:
+            m_temp[j,k] := m[p1,p2]:
+            c           := c+1:
+          od:
+        od:
+        K_cal   := kTheory_I_aux(m_temp,0):
+        kT_list := [op(kT_list),K_cal]:
+      else
+        d    := idealOrd[1,i][1]:
+        num  := numelems(d):
+        coor := findCoor(dim,d):
+        m_temp := Matrix(num):
+        s    := numelems(idealOrd[1,i][2]):
+        for j from 1 to num do
+          for k from 1 to num do
+            p1          := coor[c,1]:
+            p2          := coor[c,2]:
+            m_temp[j,k] := m[p1,p2]:
+            c           := c+1:
+          od:
+        od:
+        K_cal := kTheory_I_aux(m_temp,s):
+        kT_list := [op(kT_list),K_cal]:
+      fi:
+    od:
+  fi:
+  for l from 1 to iNO do
+    matrixI[l,l] := kT_list[l]:
+  od:
+  for o from iNO to 1 by -1 do
+    for r from o-1 to 1 by -1 do
+      if isIdealSmaller(idealOrd[1,o],idealOrd[1,r])=1 then
+      matrixI[r,o]:=1:
+      fi:
+    od:
+  od:
+  return(matrixI):
+end:
+
+kTheory_I_aux := proc(m,s)
+  local A,a,Ano,ano,K_mT,K_SM,ktheory,i:
+  A   := partitionMatrix(m)[1]:
+  a   := partitionMatrix(m)[2]:
+  Ano := numelems(A):
+  ano := numelems(a):
+  if Ano>0 then
+    K_mT := transpose(buildK_matrix(m,A,a,Ano,ano,s)):
+    for i from 1 to Ano do
+      K_mT[i,i] := K_mT[i,i]-1:
+    od:
+    K_SM := (SmithForm(K_mT)):
+    ktheory := calK(K_SM,A,a,Ano,ano,s):
+  else
+    ktheory := calK([],A,a,Ano,ano,s):
+  fi:
+  return(ktheory):
+end:
+
+invariant_IK := proc(m)
+  local mat,IK_liste,inv_IK,i:
+  mat := kTheory_I(m):
+  IK_liste := []:
+  for i from 1 to RowDimension(mat) do
+    IK_liste := [op(IK_liste),mat[i,i]]:
+  od:
+  inv_IK := sort(IK_liste):
+  return(inv_IK):
+end:
+
+indexIK_I := proc(ar)
+  local ar_temp,ar_id_temp,ar_id,m_temp,c,cc,r,s,i,j,k,ll:
+  ar_temp    := <0>:
+  ar_id_temp := <0>:
+  ar_id      := <0>:
+  c          := 1:
+  cc         := 1:
+  for i from 1 to RowDimension(ar) do
+    if ar[i,1]=0 then
+    else
+      m_temp := itom(ar[i,1])[1]:
+      ar_temp(i,1) := [idealIndex(m_temp),kTheory(m_temp),invariant_IK(m_temp)]:
+    fi:
+  od:
+  ar_id_temp(1,1) := ar_temp[1]:
+  ar_id_temp(1,2) := 1:
+  for j from 2 to RowDimension(ar_temp) do
+    for k from 1 to j-1 do
+      if ar_temp[k]=ar_temp[j] then
+        r := ColumnDimension(ar_id_temp[k]):
+        ar_id_temp(k,r+1) := j:
+        break:
+      else
+        c := c+1:
+      fi:
+    od:
+    if c=j then
+      ar_id_temp(j,1) := ar_temp[j]:
+      ar_id_temp(j,2) := j:
+    fi:
+    c := 1:
+  od:
+  for ll from 1 to RowDimension(ar_id_temp) do
+    if ar_id_temp[ll,1]<>0 then
+      ar_id(cc) := ar_id_temp[ll]:
+      cc := cc+1:
+    fi:
+  od:
+  return(ar_id):
+end:
+
+
+makePmatrices := proc(N)
+  global pmatrices;
+  local plist;
+  plist:=combinat[permute](N);
+  pmatrices:=map(x->pmatrix(N,x),plist);
+  return pmatrices;
+end:
+
+minimizei_o := proc(N,i)
+  global pmatrices;
+  makePmatrices(N);
+  return min(seq(mtoi3_o(pmatrices[k].itom3_o(N,i).pmatrices[k]^(-1)),k=1..N!));
+end:
+
+minimizei_ny := proc(id)
+  global pmatrices;
+  local N,i:
+  N := id[1]:
+  i := id[2]:
+  makePmatrices(N);
+  return ([N,min(seq(mtoi3_o(pmatrices[k].itom3_o(N,i).pmatrices[k]^(-1)),k=1..N!)),3]);
+end:
+
+pmatrix:=(N,L)->Matrix(N,N,{seq((i,L[i])=1,i=1..N)}):
+
+itom  :=  proc(id)
+  local N,i,b,h,A;
+  N := id[1]:
+  i := id[2]:
+  b := id[3]:
+  h:=convert(b^(N^b)+i,base,b);
+  A:=Matrix(N,N,(i,j)->h[N*(i-1)+j]);
+  return(A,b);
+end:
+
+mtoi := proc(A,b)
+  local ll,N;
+  N := RowDimension(A):
+  ll:=ListTools[Flatten](convert(A,listlist));
+  return([N,add(ll[ii]*b^(ii-1),ii=1..(RowDimension(A))^2),b]);
+end:
+
+itom3_o  :=  proc(N,i)
+  local h,A;
+  h:=convert(3^(N^3)+i,base,3);
+  A:=Matrix(N,N,(i,j)->h[N*(i-1)+j]);
+  return(A);
+end:
+
+mtoi3_o := proc(A)
+  local ll;
+  ll:=ListTools[Flatten](convert(A,listlist));
+  return(add(ll[ii]*3^(ii-1),ii=1..(RowDimension(A))^2));
+end:
+
+itom2_o  :=  proc(N,i)
+  local h,A;
+  h:=convert(2^(N^2)+i,base,2);
+  A:=Matrix(N,N,(i,j)->h[N*(i-1)+j]);
+  return(A);
+end:
+
+mtoi2_o := proc(A)
+  local ll;
+  ll:=ListTools[Flatten](convert(A,listlist));
+  return(add(ll[ii]*2^(ii-1),ii=1..(RowDimension(A))^2));
+end:
+
+setArray := proc(ar,filename)
+  ExportMatrix(filename,Matrix(ar)):
+end:
+
+getArray := proc(filename)
+  local ar,i,j,array_temp:
+  ar := <0>:
+  array_temp := ImportMatrix(filename):
+  for i from 1 to RowDimension(array_temp) do
+    for j from 1 to ColumnDimension(array_temp) do
+      if array_temp[i,j]<>0 then
+        ar(i,j) := parse(array_temp[i,j]):
+      fi:
+    od:
+  od:
+  return(ar):
+end:
+
+setLIST := proc(liste,filename)
+  ExportMatrix(filename,Matrix(liste)):
+end:
+
+getLIST := proc(filename)
+  local liste,i,liste_temp:
+  liste := <0>:
+  liste_temp := ImportMatrix(filename):
+  for i from 1 to ColumnDimension(liste_temp) do
+    liste(1,i) := parse(liste_temp[1,i]):
+  od:
+  return(liste):
+end:
+
+setGenerelListe := proc(liste,filename)
+  ExportMatrix(filename,Matrix(liste)):
+end:
+
+getGenerelListe := proc(filename)
+  ImportMatrix(z_listOfZero):
+end:
+
+createArray := proc(dim,mins,minsList)
+  local ar,K,M,minsList_ID,i,m,j,k,o,r1,r4,p,q,count:
+  K           := <0>:
+  M           := []:
+  minsList_ID := <0>:
+  ar          := <0>:
+  count       := 0:
+  for i from 1 to ColumnDimension(minsList) do
+    m := minsList[i]:
+    K(1,i) := [m]:
+  od:
+  for j from 1 to ColumnDimension(mins) do
+    k := mins[j]:
+    if k<>j-1 then
+      for o from 1 to ColumnDimension(K) do
+        if K[1][o][1]=k then
+          K(1,o) := [op(K[1][o]),j-1]:
+          break:
+        fi:
+      od:
+    fi:
+  od:
+  for r1 from 1 to ColumnDimension(K) do
+    for r4 from 1 to numelems(K[1,r1]) do
+      M := [op(M),[dim,K[1,r1][r4],3]]:
+    od:
+    minsList_ID(1,r1) := M:
+    M := []:
+  od:
+  for p from 1 to ColumnDimension(minsList_ID) do
+    if minsList_ID[1,p]<>0 then
+      if idealIndex(itom(minsList_ID[1,p][1])[1])<>0 then
+        for q from 1 to numelems(minsList_ID[1,p]) do
+          ar(p-count,q) := minsList_ID[1,p][q]:
+        od:
+      else
+        count := count+1:
+      fi:
+    fi:
+  od:
+  return(ar):
+end:
+
+maxNinMatrix := proc(m)
+  local b,i,liste:
+  liste := []:
+  for i from 0 to 6 do
+    if member(i,m) then
+      liste := [op(liste), i]:
+    fi:
+    b := max(liste)+1;
+  od:
+  if b<4 then
+    return(3):
+  else
+    return(b):
+  fi:
+end:
+
+putMatrixIDinListe := proc(m)
+  global ba:
+  local id_o,id_g,liste:
+  liste := []:
+  ba := maxNinMatrix(m):
+  if ba=3 and RowDimension(m)<6 then
+    id_o := mtoi(m,ba):
+    id_g := minimizei_ny(mtoi(m,ba)):
+    liste := [op(liste), id_o, id_g]:
+  else
+    id_o := mtoi(m,ba):
+    liste := [op(liste), id_o]:
+  fi:
+  return(liste)
+end:
+
+moveID := proc(id)
+  local b,dim,L_o,L_m,L_g,liste1,liste2,liste3,i,j,l,k,m,eM:
+  L_o   := []:
+  L_m   := []:
+  L_g   := []:
+  dim   := id[1]:
+  b     := id[3]:
+  eM    := itom(id)[1]:
+  for j from 1 to dim do
+    RowCol(j,eM):
+    if dim>7 or b>4 then
+      l := moveR(j,eM):
+      if l<>NULL then
+        liste1 := putMatrixIDinListe(l):
+        if numelems(liste1)=1 then
+          L_m := [op(L_m), liste1[1]]:
+        elif liste1[1]<>liste1[2] then
+          L_o := [op(L_o), liste1[1]]:
+          L_g := [op(L_g), liste1[2]]:
+        else
+          L_g := [op(L_g), liste1[2]]:
+        fi:
+      fi:
+    else
+      l := moveR(j,eM):
+      if l<>NULL then
+        liste1 := putMatrixIDinListe(l):
+        if numelems(liste1)=1 then
+          L_m := [op(L_m), liste1[1]]:
+        elif liste1[1]<>liste1[2] then
+          L_o := [op(L_o), liste1[1]]:
+          L_g := [op(L_g), liste1[2]]:
+        else
+          L_g := [op(L_g), liste1[2]]:
+        fi:
+      fi:
+      k := moveO(j,eM):
+      if k<>NULL then
+        liste2 := putMatrixIDinListe(k):
+        if numelems(liste2)=1 then
+          L_m := [op(L_m), liste2[1]]:
+        elif liste2[1]<>liste2[2] then
+          L_o := [op(L_o), liste2[1]]:
+          L_g := [op(L_g), liste2[2]]:
+        else
+          L_g := [op(L_g), liste2[2]]:
+        fi:
+      fi:
+      m := moveI(j,eM):
+      if m<>NULL then
+        liste3 := putMatrixIDinListe(m):
+        if numelems(liste3)=1 then
+          L_m := [op(L_m), liste3[1]]:
+        elif liste3[1]<>liste3[2] then
+          L_o := [op(L_o), liste3[1]]:
+          L_g := [op(L_g), liste3[2]]:
+        else
+          L_g := [op(L_g), liste3[2]]:
+        fi:
+      fi:
+    fi:
+  od;
+  return(L_o,L_m,L_g):
+end:
+
+arrayInArray := proc(b,ar)
+  local arR,j,o:
+  arR := RowDimension(ar):
+  for j from 1 to RowDimension(b) do
+    for o from 1 to ColumnDimension(b[j]) do
+      ar(j+arR,o) := b[j,o]
+    od:
+  od:
+  return(ar):
+end:
+
+buildList := proc(b)
+  local i,j,liste:
+  liste := <0>:
+  for i from 1 to RowDimension(b) do
+    liste(1,i) := [b[i,1]]:
+  od:
+  return(liste):
+end:
+
+addToLIST := proc(b,li)
+  local arC,build,i:
+  arC := ColumnDimension(li):
+  build := buildList(b):
+  for i from 1 to ColumnDimension(build) do
+    li(i+arC) := build[1,i]:
+  od:
+  return(li):
+end:
+
+indexIK := proc(ar)
+  local ar_temp,ar_id_temp,ar_id,m_temp,c,cc,r,s,i,j,k,ll:
+  ar_temp    := <0>:
+  ar_id_temp := <0>:
+  ar_id      := <0>:
+  c          := 1:
+  cc         := 1:
+  for i from 1 to RowDimension(ar) do
+    if ar[i,1]=0 then
+    else
+      m_temp := itom(ar[i,1])[1]:
+      ar_temp(i,1) := [idealIndex(m_temp),kTheory(m_temp)]:
+    fi:
+  od:
+  ar_id_temp(1,1) := ar_temp[1]:
+  ar_id_temp(1,2) := 1:
+  for j from 2 to RowDimension(ar_temp) do
+    for k from 1 to j-1 do
+      if ar_temp[k]=ar_temp[j] then
+        r := ColumnDimension(ar_id_temp[k]):
+        ar_id_temp(k,r+1) := j:
+        break:
+      else
+        c := c+1:
+      fi:
+    od:
+    if c=j then
+      ar_id_temp(j,1) := ar_temp[j]:
+      ar_id_temp(j,2) := j:
+    fi:
+    c := 1:
+  od:
+  for ll from 1 to RowDimension(ar_id_temp) do
+    if ar_id_temp[ll,1]<>0 then
+      ar_id(cc) := ar_id_temp[ll]:
+      cc := cc+1:
+    fi:
+  od:
+  return(ar_id):
+end:
+
+koersel_init := proc(ar,li)
+  local arC,arR,count,liste,L_o,L_m,L_g,e,i,j1,j2,j3:
+  liste := []:
+  arC := ColumnDimension(ar):
+  arR := RowDimension(ar):
+  count := arC+1:
+  for i from 1 to arR do
+    e := ar[i,1]:
+    L_o,L_m,L_g := moveID(e)[1],moveID(e)[2],moveID(e)[3]:
+    for j1 in L_o do
+      if member(j1,ar[i]) then
+      else
+        ar(i,count) := j1:
+        count := count+1:
+      fi:
+    od:
+    for j2 in L_m do
+      if member(j2,ar[i]) then
+      else
+        ar(i,count) := j2:
+        liste := [op(liste), j2]:
+        count := count+1:
+      fi:
+    od:
+    for j3 in L_g do
+      if member(j3,ar[i]) then
+      else
+        ar(i,count) := j3:
+        liste := [op(liste), j3]:
+        count := count+1:
+      fi:
+    od:
+    count := arC+1:
+    li(1,i) := liste:
+    liste := []:
+  od:
+  return(ar,li):
+end:
+
+koersel := proc(ar,li)
+  local a,arC,arR,count,liste,L_o,L_m,L_g,id_o,id_g,e,eM,i,k,j1,j2,j3:
+  liste := []:
+  arC := ColumnDimension(ar):
+  arR := RowDimension(ar):
+  count := arC+1:
+  a := fopen("a_k_reg", 'WRITE', 'TEXT'):
+    writeline(a,"Koersel_reg:"):
+  fclose(a);
+  for i from 1 to ColumnDimension(li) do
+    if (i mod 5)=0 then
+      a := fopen("a_k_reg", 'APPEND', 'TEXT'):
+        writeline(a,convert(i,string)):
+      fclose(a);
+    fi:
+    for k from 1 to numelems(li[i]) do
+      if li[i]=[] then
+      else
+        e := li[i][k]:
+        L_o,L_m,L_g := moveID(e)[1],moveID(e)[2],moveID(e)[3]:
+        for j1 in L_o do
+          if member(j1,ar[i]) then
+          else
+            ar(i,count) := j1:
+            count := count+1:
+          fi:
+        od:
+        for j2 in L_m do
+          if member(j2,ar[i]) then
+          else
+            ar(i,count) := j2:
+            liste := [op(liste), j2]:
+            count := count+1:
+          fi:
+        od:
+        for j3 in L_g do
+        if member(j3,ar[i]) then
+          else
+            ar(i,count) := j3:
+            liste := [op(liste), j3]:
+            count := count+1:
+          fi:
+        od:
+      fi:
+    od:
+    count := arC+1:
+    li(i) := liste:
+    liste := []:
+  od:
+  return(ar,li):
+end:
+
+mergeAR_init := proc(ar,li)
+  local arC,arR,index_ik,liste_temp,container,container_ny,listN,count,c,i,j,k,ll,o,p,q,r,s:
+  arC := ColumnDimension(ar):
+  arR := RowDimension(ar):
+  count := arC+1:
+  container := []:
+  index_ik := indexIK_I(ar):
+  liste_temp := []:
+  for i in index_ik do
+    for j from 2 to numelems(i) do
+      if i[j]<>0 then
+        liste_temp := [op(liste_temp),i[j]]:
+      fi:
+    od:
+    for k from 2 to numelems(liste_temp) do
+      for ll from 1 to k-1 do
+        for o from 1 to arC do
+          if ar[liste_temp[k],o]<>0 and member(ar[liste_temp[k],o],ar[liste_temp[ll]]) then
+            container := [op(container),liste_temp[k],liste_temp[ll]]:
+            break:
+          fi:
+        od:
+      od:
+    od:
+    if numelems(container)>0 then
+      container_ny := convert(convert(container,set),list):
+      for s from 2 to numelems(container_ny) do
+        for p in ar[container_ny[s]] do
+          if p<>0 then
+            ar(container_ny[1],count) := p:
+            count := count+1:
+          fi:
+        od:
+        for q from 1 to arC do
+          ar(container_ny[s],q) := 0:
+        od:
+        listN := li[1,container_ny[1]]:
+        for r from 1 to numelems(li[1,container_ny[s]]) do
+          if member(li[1,container_ny[s]][r],listN) then
+          else
+            listN := [op(listN),li[1,container_ny[s]][r]]:
+          fi:
+        od:
+        li(1,container_ny[1]) := listN:
+        li(1,container_ny[s])  := []:
+      od:
+    fi:
+    count      := arC+1:
+    liste_temp := []:
+    container  := []:
+  od:
+  return(ar,li):
+end:
+
+mergeAR := proc(ar,li)
+  local a,come,arC,arR,index_ik,liste_temp,alikeArray,alikeArray_ny,listN,count,mark,aR,aC,i,j,k,ll,o,p,pp,ppp,q,qq,r,rr,s,ss,t,z:
+  arC := ColumnDimension(ar):
+  arR := RowDimension(ar):
+  count := arC+1:
+  mark := 0:
+  come := 1:
+  alikeArray := Array([]):
+  alikeArray_ny := Array([]):
+  index_ik := indexIK_I(ar):
+  liste_temp := []:
+  a := fopen("a_m_reg", 'WRITE', 'TEXT'):
+    writeline(a,"Merge_reg:"):
+  fclose(a);
+  for i in index_ik do
+    if (come mod 2)=0 then
+      a := fopen("a_m_reg", 'APPEND', 'TEXT'):
+        writeline(a,convert(come,string)):
+      fclose(a);
+    fi:
+    come := come+1:
+    for j from 2 to numelems(i) do
+      if i[j]<>0 then
+        liste_temp := [op(liste_temp),i[j]]:
+      fi:
+    od:
+    for k from 2 to numelems(liste_temp) do
+      for ll from 1 to k-1 do
+        for o from 1 to arC do
+          if ar[liste_temp[k],o]<>0 and member(ar[liste_temp[k],o],ar[liste_temp[ll]]) then
+            aR := RowDimension(alikeArray):
+            aC := ColumnDimension(alikeArray):
+            if aC=0 then
+              alikeArray(1,1) := liste_temp[k]:
+              alikeArray(1,2) := liste_temp[ll]:
+              mark := 1:
+            elif aR=1 then
+              if member(liste_temp[k],alikeArray) or member(liste_temp[ll],alikeArray) then
+                alikeArray(1,aC+1) := liste_temp[k]:
+                alikeArray(1,aC+2) := liste_temp[ll]:
+                mark := 1:
+              fi:
+            else
+              for t from 1 to aR do
+                if member(liste_temp[k],alikeArray[t]) or member(liste_temp[ll],alikeArray[t]) then
+                  alikeArray(t,aC+1) := liste_temp[k]:
+                  alikeArray(t,aC+2) := liste_temp[ll]:
+                  mark := 1:
+                fi:
+              od:
+            fi:
+            if mark=0 then
+              alikeArray(aR+1,aC+1) := liste_temp[k]:
+              alikeArray(aR+1,aC+2) := liste_temp[ll]:
+            fi:
+            mark := 0:
+            break:
+          fi:
+        od:
+      od:
+    od:
+    if ColumnDimension(alikeArray)>0 then
+      if RowDimension(alikeArray)=1 then
+        alikeArray_ny := [convert(convert(alikeArray,set),Array)]:
+      elif RowDimension(alikeArray)>1 then
+        for z from 1 to RowDimension(alikeArray) do
+          alikeArray_ny(z) := convert(convert(alikeArray[z],set),Array):
+        od:
+      fi:
+      for p in alikeArray_ny do
+        if p[1]<>0 then
+          for s from 2 to ColumnDimension(p) do
+            for pp in ar[p[s]] do
+              if pp<>0 then
+                ar(p[1],count) := pp:
+                count := count+1:
+              fi:
+            od:
+            for q from 1 to arC do
+              ar(p[s],q) := 0:
+            od:
+            listN := li[p[1]]:
+            for r from 1 to numelems(li[p[s]]) do
+              if member(li[p[s]][r],listN) then
+              else
+                listN := [op(listN),li[p[s]][r]]:
+              fi:
+            od:
+            li(p[1]) := listN:
+            li(p[s])  := []:
+          od:
+        else
+          for ss from 3 to ColumnDimension(p) do
+            for ppp in ar[p[ss]] do
+              if ppp<>0 then
+                ar(p[2],count) := ppp:
+                count := count+1:
+              fi:
+            od:
+            for qq from 1 to arC do
+              ar(p[ss],qq) := 0:
+            od:
+            listN := li[p[2]]:
+            for rr from 1 to numelems(li[p[ss]]) do
+              if member(li[p[ss]][rr],listN) then
+              else
+                listN := [op(listN),li[p[ss]][rr]]:
+              fi:
+            od:
+            li(p[2])   := listN:
+            li(p[ss])  := []:
+          od:
+        fi:
+        count := arC+1:
+      od:
+    fi:
+    liste_temp := []:
+    alikeArray := Array([]):
+    alikeArray_ny := Array([]):
+  od:
+  return(ar,li):
+end:
+
+reduceAR_init := proc(ar,li)
+  local AR_ny,LIST_ny,liste_temp,l_temp,c,i,j,k:
+  AR_ny   := Array([]):
+  LIST_ny := Array([]):
+  liste_temp := []:
+  c       := 0:
+  for i from 1 to RowDimension(ar) do
+    l_temp  := convert(sort(convert(ar[i],set)),list):
+    if numelems(l_temp)=1 then
+      c := c+1:
+    elif l_temp[1]=0 then
+      for j from 2 to numelems(l_temp) do
+        AR_ny(i-c,j-1) := l_temp[j]:
+      od:
+      liste_temp     := [op(liste_temp),li[1,i]]:
+      LIST_ny(1,i-c) := FlattenOnce(liste_temp):
+    else
+      for k from 1 to numelems(l_temp) do
+        AR_ny(i-c,k) := l_temp[k]:
+      od:
+      liste_temp     := [op(liste_temp),li[1,i]]:
+      LIST_ny(1,i-c) := FlattenOnce(liste_temp):
+    fi:
+    liste_temp := []:
+  od:
+  return(AR_ny,LIST_ny):
+end:
+
+reduceAR := proc(ar,li)
+  local a,AR_ny,LIST_ny,liste_temp,l_temp,c,i,j,k:
+  AR_ny   := Array([]):
+  LIST_ny := Array([]):
+  liste_temp := []:
+  c       := 0:
+  a := fopen("a_r_reg", 'WRITE', 'TEXT'):
+    writeline(a,"Reduce_reg:"):
+  fclose(a);
+  for i from 1 to RowDimension(ar) do
+    if (i mod 50)=0 then
+      a := fopen("a_r_reg", 'APPEND', 'TEXT'):
+        writeline(a,convert(i,string)):
+      fclose(a);
+    fi:
+    l_temp  := convert(sort(convert(ar[i],set)),list):
+    if numelems(l_temp)=1 then
+      c := c+1:
+    elif l_temp[1]=0 then
+      for j from 2 to numelems(l_temp) do
+        AR_ny(i-c,j-1) := l_temp[j]:
+      od:
+      liste_temp     := [op(liste_temp),li[i]]:
+      LIST_ny(1,i-c) := FlattenOnce(liste_temp):
+    else
+      for k from 1 to numelems(l_temp) do
+        AR_ny(i-c,k) := l_temp[k]:
+      od:
+      liste_temp     := [op(liste_temp),li[i]]:
+      LIST_ny(1,i-c) := FlattenOnce(liste_temp):
+    fi:
+    liste_temp := []:
+  od:
+  return(AR_ny,LIST_ny):
+end:
+
+arrayToRead := proc(ar)
+  local d,arREAD:
+  d      := RowDimension(ar):
+  arREAD := ar[1..d,1..50]:
+  return(arREAD):
+end:
+
+ar2  := getArray(z_ar2):
+ar3  := getArray(z_ar3):
+
+
+a := fopen("x_ar2", 'WRITE', 'TEXT'):
+      writeline(a,"ar2_Row_Col",convert(RowDimension(ar2),string),convert(ColumnDimension(ar2),string)):
+    fclose(a);
+
+a := fopen("x_ar3", 'WRITE', 'TEXT'):
+      writeline(a,"ar3_Row_Col",convert(RowDimension(ar3),string),convert(ColumnDimension(ar3),string)):
+    fclose(a);
+
+AR   := Array(ar2):
+  LIST := <0>:
+
+  AR,LIST := koersel_init(AR,LIST):
+    a := fopen("b_K0_reg", 'WRITE', 'TEXT'):
+      writeline(a,"K0_reg_K:",convert(RowDimension(AR),string),convert(ColumnDimension(AR),string),convert(ColumnDimension(LIST),string)):
+    fclose(a);
+  AR,LIST := mergeAR_init(AR,LIST):
+    a := fopen("b_K0_reg", 'APPEND', 'TEXT'):
+      writeline(a,"K0_reg_M:",convert(RowDimension(AR),string),convert(ColumnDimension(AR),string),  convert(ColumnDimension(LIST),string)):
+    fclose(a);
+  AR,LIST := reduceAR_init(AR,LIST):
+    a := fopen("b_K0_reg", 'APPEND', 'TEXT'):
+      writeline(a,"K0_reg_R:",convert(RowDimension(AR),string),convert(ColumnDimension(AR),string),convert(ColumnDimension(LIST),string)):
+    fclose(a);
+
+  AR,LIST := koersel(AR,LIST):
+    a := fopen("c_K1_reg", 'WRITE', 'TEXT'):
+      writeline(a,"K1_reg_K:",convert(RowDimension(AR),string),convert(ColumnDimension(AR),string),convert(ColumnDimension(LIST),string)):
+    fclose(a);
+  AR,LIST := mergeAR(AR,LIST):
+    a := fopen("c_K1_reg", 'APPEND', 'TEXT'):
+      writeline(a,"K1_reg_M:",convert(RowDimension(AR),string),convert(ColumnDimension(AR),string),convert(ColumnDimension(LIST),string)):
+    fclose(a);
+  AR,LIST := reduceAR(AR,LIST):
+    a := fopen("c_K1_reg", 'APPEND', 'TEXT'):
+      writeline(a,"K1_reg_R:",convert(RowDimension(AR),string),convert(ColumnDimension(AR),string),convert(ColumnDimension(LIST),string)):
+    fclose(a);
+
+  setArray(AR,c_AR16_1):
+  setLIST(LIST,c_LI16_1):
+
+ AR,LIST := koersel(AR,LIST):
+    a := fopen("d_K2_reg", 'WRITE', 'TEXT'):
+      writeline(a,"K2_reg_K:",convert(RowDimension(AR),string),convert(ColumnDimension(AR),string),convert(ColumnDimension(LIST),string)):
+    fclose(a);
+AR,LIST := mergeAR(AR,LIST):
+    a := fopen("d_K2_reg", 'APPEND', 'TEXT'):
+      writeline(a,"K2_reg_M:",convert(RowDimension(AR),string),convert(ColumnDimension(AR),string),convert(ColumnDimension(LIST),string)):
+    fclose(a);
+AR,LIST := reduceAR(AR,LIST):
+    a := fopen("d_K2_reg", 'APPEND', 'TEXT'):
+      writeline(a,"K2_reg_R:",convert(RowDimension(AR),string),convert(ColumnDimension(AR),string),convert(ColumnDimension(LIST),string)):
+    fclose(a);
+
+  setArray(AR,d_AR16_2):
+  setLIST(LIST,d_LI16_2):
+
+AR   := arrayInArray(ar3,AR):
+LIST := addToLIST(ar3,LIST):
+
+a := fopen("e_KP_ROW_COL_LIST", 'WRITE', 'TEXT'):
+      writeline(a,"KP_ROW_COL_LIST:",convert(RowDimension(AR),string),convert(ColumnDimension(AR),string),convert(ColumnDimension(LIST),string)):
+    fclose(a);
+
+AR,LIST := koersel(AR,LIST):
+    a := fopen("f_K3_reg", 'WRITE', 'TEXT'):
+      writeline(a,"K3_reg_K:",convert(RowDimension(AR),string),convert(ColumnDimension(AR),string),convert(ColumnDimension(LIST),string)):
+    fclose(a);
+AR,LIST := mergeAR(AR,LIST):
+    a := fopen("f_K3_reg", 'APPEND', 'TEXT'):
+      writeline(a,"K3_reg_M:",convert(RowDimension(AR),string),convert(ColumnDimension(AR),string),convert(ColumnDimension(LIST),string)):
+    fclose(a);
+AR,LIST := reduceAR(AR,LIST):
+    a := fopen("f_K3_reg", 'APPEND', 'TEXT'):
+      writeline(a,"K3_reg_R:",convert(RowDimension(AR),string),convert(ColumnDimension(AR),string),convert(ColumnDimension(LIST),string)):
+    fclose(a);
+
+setArray(AR,f_AR16_3):
+setLIST(LIST,f_LI16_3):
+
+
+AR,LIST := koersel(AR,LIST):
+    a := fopen("g_K4_reg", 'WRITE', 'TEXT'):
+      writeline(a,"K4_reg_K:",convert(RowDimension(AR),string),convert(ColumnDimension(AR),string),convert(ColumnDimension(LIST),string)):
+    fclose(a);
+AR,LIST := mergeAR(AR,LIST):
+    a := fopen("g_K4_reg", 'APPEND', 'TEXT'):
+      writeline(a,"K4_reg_M:",convert(RowDimension(AR),string),convert(ColumnDimension(AR),string),convert(ColumnDimension(LIST),string)):
+    fclose(a);
+AR,LIST := reduceAR(AR,LIST):
+    a := fopen("g_K4_reg", 'APPEND', 'TEXT'):
+      writeline(a,"K4_reg_R:",convert(RowDimension(AR),string),convert(ColumnDimension(AR),string),convert(ColumnDimension(LIST),string)):
+    fclose(a);
+
+AR_READ := arrayToRead(AR):
+a := fopen("g_K4_READ", 'WRITE', 'TEXT'):
+      writeline(a,"K4_READ_ROW_COL:",convert(RowDimension(AR_READ),string),convert(ColumnDimension(AR_READ),string)):
+    fclose(a);
+
+setArray(AR,g_AR16_4):
+setArray(AR_READ,g_AR16_READ_4):
+setLIST(LIST,g_LI16_4):
+
+AR,LIST := koersel(AR,LIST):
+    a := fopen("h_K5_reg", 'WRITE', 'TEXT'):
+      writeline(a,"K5_reg_K:",convert(RowDimension(AR),string),convert(ColumnDimension(AR),string),convert(ColumnDimension(LIST),string)):
+    fclose(a);
+AR,LIST := mergeAR(AR,LIST):
+    a := fopen("h_K5_reg", 'APPEND', 'TEXT'):
+      writeline(a,"K5_reg_M:",convert(RowDimension(AR),string),convert(ColumnDimension(AR),string),convert(ColumnDimension(LIST),string)):
+    fclose(a);
+AR,LIST := reduceAR(AR,LIST):
+    a := fopen("h_K5_reg", 'APPEND', 'TEXT'):
+      writeline(a,"K5_reg_R:",convert(RowDimension(AR),string),convert(ColumnDimension(AR),string),convert(ColumnDimension(LIST),string)):
+    fclose(a);
+
+AR_READ := arrayToRead(AR):
+a := fopen("h_K5_READ", 'WRITE', 'TEXT'):
+      writeline(a,"K5_READ_ROW_COL:",convert(RowDimension(AR_READ),string),convert(ColumnDimension(AR_READ),string)):
+    fclose(a);
+
+setArray(AR,h_AR16_5):
+setArray(AR_READ,h_AR16_READ_5):
+setLIST(LIST,h_LI16_5):
+
+AR,LIST := koersel(AR,LIST):
+    a := fopen("i_K6_reg", 'WRITE', 'TEXT'):
+      writeline(a,"K6_reg_K:",convert(RowDimension(AR),string),convert(ColumnDimension(AR),string),convert(ColumnDimension(LIST),string)):
+    fclose(a);
+AR,LIST := mergeAR(AR,LIST):
+    a := fopen("i_K6_reg", 'APPEND', 'TEXT'):
+      writeline(a,"K6_reg_M:",convert(RowDimension(AR),string),convert(ColumnDimension(AR),string),convert(ColumnDimension(LIST),string)):
+    fclose(a);
+AR,LIST := reduceAR(AR,LIST):
+    a := fopen("i_K6_reg", 'APPEND', 'TEXT'):
+      writeline(a,"K6_reg_R:",convert(RowDimension(AR),string),convert(ColumnDimension(AR),string),convert(ColumnDimension(LIST),string)):
+    fclose(a);
+
+AR_READ := arrayToRead(AR):
+a := fopen("i_K6_READ", 'WRITE', 'TEXT'):
+      writeline(a,"K6_READ_ROW_COL:",convert(RowDimension(AR_READ),string),convert(ColumnDimension(AR_READ),string)):
+    fclose(a);
+
+setArray(AR,i_AR16_6):
+setArray(AR_READ,i_AR16_READ_6):
+setLIST(LIST,i_LI16_6):
+
+
+AR,LIST := koersel(AR,LIST):
+    a := fopen("j_K7_reg", 'WRITE', 'TEXT'):
+      writeline(a,"K7_reg_K:",convert(RowDimension(AR),string),convert(ColumnDimension(AR),string),convert(ColumnDimension(LIST),string)):
+    fclose(a);
+AR,LIST := mergeAR(AR,LIST):
+    a := fopen("j_K7_reg", 'APPEND', 'TEXT'):
+      writeline(a,"K7_reg_M:",convert(RowDimension(AR),string),convert(ColumnDimension(AR),string),convert(ColumnDimension(LIST),string)):
+    fclose(a);
+AR,LIST := reduceAR(AR,LIST):
+    a := fopen("j_K7_reg", 'APPEND', 'TEXT'):
+      writeline(a,"K7_reg_R:",convert(RowDimension(AR),string),convert(ColumnDimension(AR),string),convert(ColumnDimension(LIST),string)):
+    fclose(a);
+
+AR_READ := arrayToRead(AR):
+a := fopen("j_K7_READ", 'WRITE', 'TEXT'):
+      writeline(a,"K7_READ_ROW_COL:",convert(RowDimension(AR_READ),string),convert(ColumnDimension(AR_READ),string)):
+    fclose(a);
+
+setArray(AR,j_AR16_7):
+setArray(AR_READ,j_AR16_READ_7):
+setLIST(LIST,j_LI16_7):
+
+AR,LIST := koersel(AR,LIST):
+    a := fopen("k_K8_reg", 'WRITE', 'TEXT'):
+      writeline(a,"K8_reg_K:",convert(RowDimension(AR),string),convert(ColumnDimension(AR),string),convert(ColumnDimension(LIST),string)):
+    fclose(a);
+AR,LIST := mergeAR(AR,LIST):
+    a := fopen("k_K8_reg", 'APPEND', 'TEXT'):
+      writeline(a,"K8_reg_M:",convert(RowDimension(AR),string),convert(ColumnDimension(AR),string),convert(ColumnDimension(LIST),string)):
+    fclose(a);
+AR,LIST := reduceAR(AR,LIST):
+    a := fopen("k_K8_reg", 'APPEND', 'TEXT'):
+      writeline(a,"K8_reg_R:",convert(RowDimension(AR),string),convert(ColumnDimension(AR),string),convert(ColumnDimension(LIST),string)):
+    fclose(a);
+
+AR_READ := arrayToRead(AR):
+a := fopen("k_K8_READ", 'WRITE', 'TEXT'):
+      writeline(a,"K8_READ_ROW_COL:",convert(RowDimension(AR_READ),string),convert(ColumnDimension(AR_READ),string)):
+    fclose(a);
+
+setArray(AR,k_AR16_8):
+setArray(AR_READ,k_AR16_READ_8):
+setLIST(LIST,k_LI16_8):
+
+AR,LIST := koersel(AR,LIST):
+    a := fopen("l_K9_reg", 'WRITE', 'TEXT'):
+      writeline(a,"K9_reg_K:",convert(RowDimension(AR),string),convert(ColumnDimension(AR),string),convert(ColumnDimension(LIST),string)):
+    fclose(a);
+AR,LIST := mergeAR(AR,LIST):
+    a := fopen("l_K9_reg", 'APPEND', 'TEXT'):
+      writeline(a,"K9_reg_M:",convert(RowDimension(AR),string),convert(ColumnDimension(AR),string),convert(ColumnDimension(LIST),string)):
+    fclose(a);
+AR,LIST := reduceAR(AR,LIST):
+    a := fopen("l_K9_reg", 'APPEND', 'TEXT'):
+      writeline(a,"K9_reg_R:",convert(RowDimension(AR),string),convert(ColumnDimension(AR),string),convert(ColumnDimension(LIST),string)):
+    fclose(a);
+
+AR_READ := arrayToRead(AR):
+a := fopen("l_K9_READ", 'WRITE', 'TEXT'):
+      writeline(a,"K9_READ_ROW_COL:",convert(RowDimension(AR_READ),string),convert(ColumnDimension(AR_READ),string)):
+    fclose(a);
+
+setArray(AR,l_AR16_9):
+setArray(AR_READ,l_AR16_READ_9):
+setLIST(LIST,l_LI16_9):
+
+AR,LIST := koersel(AR,LIST):
+    a := fopen("m_K10_reg", 'WRITE', 'TEXT'):
+      writeline(a,"K10_reg_K:",convert(RowDimension(AR),string),convert(ColumnDimension(AR),string),convert(ColumnDimension(LIST),string)):
+    fclose(a);
+AR,LIST := mergeAR(AR,LIST):
+    a := fopen("m_K10_reg", 'APPEND', 'TEXT'):
+      writeline(a,"K10_reg_M:",convert(RowDimension(AR),string),convert(ColumnDimension(AR),string),convert(ColumnDimension(LIST),string)):
+    fclose(a);
+AR,LIST := reduceAR(AR,LIST):
+    a := fopen("m_K10_reg", 'APPEND', 'TEXT'):
+      writeline(a,"K10_reg_R:",convert(RowDimension(AR),string),convert(ColumnDimension(AR),string),convert(ColumnDimension(LIST),string)):
+    fclose(a);
+
+AR_READ := arrayToRead(AR):
+a := fopen("m_K10_READ", 'WRITE', 'TEXT'):
+      writeline(a,"K10_READ_ROW_COL:",convert(RowDimension(AR_READ),string),convert(ColumnDimension(AR_READ),string)):
+    fclose(a);
+
+setArray(AR,m_AR16_10):
+setArray(AR_READ,m_AR16_READ_10):
+setLIST(LIST,m_LI16_10):
+
+AR,LIST := koersel(AR,LIST):
+    a := fopen("n_K11_reg", 'WRITE', 'TEXT'):
+      writeline(a,"K11_reg_K:",convert(RowDimension(AR),string),convert(ColumnDimension(AR),string),convert(ColumnDimension(LIST),string)):
+    fclose(a);
+AR,LIST := mergeAR(AR,LIST):
+    a := fopen("n_K11_reg", 'APPEND', 'TEXT'):
+      writeline(a,"K11_reg_M:",convert(RowDimension(AR),string),convert(ColumnDimension(AR),string),convert(ColumnDimension(LIST),string)):
+    fclose(a);
+AR,LIST := reduceAR(AR,LIST):
+    a := fopen("n_K11_reg", 'APPEND', 'TEXT'):
+      writeline(a,"K11_reg_R:",convert(RowDimension(AR),string),convert(ColumnDimension(AR),string),convert(ColumnDimension(LIST),string)):
+    fclose(a);
+
+AR_READ := arrayToRead(AR):
+a := fopen("n_K11_READ", 'WRITE', 'TEXT'):
+      writeline(a,"K11_READ_ROW_COL:",convert(RowDimension(AR_READ),string),convert(ColumnDimension(AR_READ),string)):
+    fclose(a);
+
+setArray(AR,n_AR16_11):
+setArray(AR_READ,n_AR16_READ_11):
+setLIST(LIST,n_LI16_11):

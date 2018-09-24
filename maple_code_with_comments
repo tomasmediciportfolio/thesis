@@ -1,0 +1,3338 @@
+restart
+with(combinat):
+with(GroupTheory):
+with(plots):
+with(ListTools):
+with(Statistics):
+with(ArrayTools):
+with(LinearAlgebra):
+with(Iterator):
+with(MTM):
+with(GraphTheory):
+with(Bits):
+
+Maple document, for thesis by Tomas Medici
+Maple commands
+currentdir("/Users/tomasmedici/Dropbox/T - Studie/A_Speciale/Maple/z_filer/exp_17");
+"/Users/tomasmedici/Dropbox/T - Studie/A_Speciale/Maple/z_filer/\
+
+  exp_17"
+Initial generation of data
+Assisting procedures
+Procedures to the credit of SÃ¸ren Eilers, only adjusted slightly to accustom this experiment
+makePmatrices := proc(N)             #genererer alle permutationer af N-dim enheds-matrice
+  global pmatrices;
+  local plist;
+  plist:=combinat[permute](N);       #plist er en liste af alle permutationer af N elms
+  pmatrices:=map(x->pmatrix(N,x),plist);   #bruger pmatrix
+  return pmatrices;
+end:
+minimizei_o := proc(N,i)               (*Tager dimension og et tal, og returnerer det potentielt
+                                         nye tal, som er det mindste tal/den 'mindste' matrice af
+                                         de permuterede matricer. Returnerer altsÃ¥ indekset for enten
+                                         sig selv, eller den isomorfe graf, der er 'mindre'.
+                                         !!BASE 3!!*)
+  global pmatrices;
+  makePmatrices(N);
+  return min(seq(mtoi3_o(pmatrices[k].itom3_o(N,i).pmatrices[k]^(-1)),k=1..N!));
+end:
+minimizei_ny := proc(id)                  (*Tager et ID (base3) og returnerer det potentielt nye ID,
+                                         indeholdende det tal, som er det mindste tal/den 'mindste'
+                                         matrice af de permuterede matricer. Returnerer altsÃ¥ id/indekset
+                                         for enten sig selv, eller den isomorfe graf, der er 'mindre'.
+                                         !!VIRKER KUN PÃ BASE 3!!*)
+  global pmatrices;
+  local N,i:
+  N := id[1]:
+  i := id[2]:
+  makePmatrices(N);
+  return ([N,min(seq(mtoi3_o(pmatrices[k].itom3_o(N,i).pmatrices[k]^(-1)),k=1..N!)),3]);
+end:
+pmatrix:=(N,L)->Matrix(N,N,{seq((i,L[i])=1,i=1..N)}):   (*pmatrix tager N og en permutationsliste og genererer
+                                                          alle permutationsmatricer (bruges i makePmatrices)*)
+itom  :=  proc(id)                       (*Tager et ID [N/dim,i/tal,b/base] og laver det til den respektive
+                                           matrice i N dimensioner og returnerer basen der beregnes efter.*)
+  local N,i,b,h,A;
+  N := id[1]:
+  i := id[2]:
+  b := id[3]:
+  h:=convert(b^(N^b)+i,base,b);
+  A:=Matrix(N,N,(i,j)->h[N*(i-1)+j]);
+  return(A,b);
+end:
+mtoi := proc(A,b)                         (*Tager en matrice og base og returnerer et ID [N/dim,i/tal,b/base],
+                                            ie. hvilket nummer (BASE b) det svarer til + mere info.*)
+  local ll,N;
+  N := RowDimension(A):
+  ll:=ListTools[Flatten](convert(A,listlist));
+  return([N,add(ll[ii]*b^(ii-1),ii=1..(RowDimension(A))^2),b]);
+end:
+itom3_o  :=  proc(N,i)                         (*Tager et tal (BASE3), og laver det til den respektive matrice i
+                                                 N dimensioner.*)
+  local h,A;
+  h:=convert(3^(N^3)+i,base,3);
+  A:=Matrix(N,N,(i,j)->h[N*(i-1)+j]);
+  return(A);
+end:
+mtoi3_o := proc(A)                             (*Tager en matrice og returnerer hvilket nummer (BASE3) det svarer
+                                                 til.*)
+  local ll;
+  ll:=ListTools[Flatten](convert(A,listlist));
+  return(add(ll[ii]*3^(ii-1),ii=1..(RowDimension(A))^2));
+end:
+itom2_o  :=  proc(N,i)                         (*Tager et tal (BASE2!!) og laver det til den respektive matrice i
+                                                 N dimensioner *)
+  local h,A;
+  h:=convert(2^(N^2)+i,base,2);
+  A:=Matrix(N,N,(i,j)->h[N*(i-1)+j]);
+  return(A);
+end:
+mtoi2_o := proc(A)                             (*Tager en matrice og returnerer hvilket nummer (BASE2) det svarer til*)
+  local ll;
+  ll:=ListTools[Flatten](convert(A,listlist));
+  return(add(ll[ii]*2^(ii-1),ii=1..(RowDimension(A))^2));
+end:
+Getters, Setters and createArray
+Procedure, that takes an array ("ar"), and stores in in a file named "filename", generates automatic a file OR overwrites an existing file.
+setArray := proc(ar,filename)
+  ExportMatrix(filename,Matrix(ar)):
+end:
+Procedure, that gets an array from file named "filename" and parses all elms, that are now string, so we end up with the original array ("ar"), handled above by storeArray:
+getArray := proc(filename)
+  local ar,i,j,array_temp:
+  ar := <0>:
+  array_temp := ImportMatrix(filename):
+  for i from 1 to RowDimension(array_temp) do
+    for j from 1 to ColumnDimension(array_temp) do
+      if array_temp[i,j]<>0 then
+        ar(i,j) := parse(array_temp[i,j]):
+      fi:
+    od:
+  od:
+  return(ar):
+end:
+Proc to store/set LIST in a file
+setLIST := proc(liste,filename)
+  ExportMatrix(filename,Matrix(liste)):
+end:
+Proc to get aLIST from a file
+getLIST := proc(filename)
+  local liste,i,liste_temp:
+  liste := <0>:
+  liste_temp := ImportMatrix(filename):
+  for i from 1 to ColumnDimension(liste_temp) do
+    liste(1,i) := parse(liste_temp[1,i]):
+  od:
+  return(liste):
+end:
+Two procedures to set/get a list to/from a file in the currentdir(). It seems to set any normal list to an array, and when getting it, it is an array.
+setGenerelListe := proc(liste,filename)
+  ExportMatrix(filename,Matrix(liste)):
+end:
+getGenerelListe := proc(filename)
+  ImportMatrix(filename):
+end:
+Procedure, taking dimension of matrix, lists mins and minsList, returns an array with the elms in it
+createArray := proc(dim,mins,minsList)
+  local ar,K,M,minsList_ID,i,m,j,k,o,r1,r4,p,q,count:
+  K           := <0>:
+  M           := []:
+  minsList_ID := <0>:
+  ar          := <0>:
+  count       := 0:
+  for i from 1 to ColumnDimension(minsList) do     #Makes array K of lists of iso-classes (either 45 or 3411) ie. [[0],[1],..,[3411]]
+    m := minsList[i]:
+    K(1,i) := [m]:
+  od:
+  for j from 1 to ColumnDimension(mins) do         #Runs through mins finds the numbers belonging to 'another' iso-class
+    k := mins[j]:
+    if k<>j-1 then
+      #print(k):
+      for o from 1 to ColumnDimension(K) do        #Adds non-iso numbers to iso-classes: [1]->[1,27],[3]->[3,9] etc.
+        if K[1][o][1]=k then
+          K(1,o) := [op(K[1][o]),j-1]:
+          break:                                   #Breaks when finding correct elm, speeds things up!?
+        fi:
+      od:
+    fi:
+  od:
+  #print(K):
+  for r1 from 1 to ColumnDimension(K) do           #Change elms in K to ID-elms -> minsList_ID (BASE3)
+    for r4 from 1 to numelems(K[1,r1]) do
+      M := [op(M),[dim,K[1,r1][r4],3]]:
+    od:
+    minsList_ID(1,r1) := M:
+    M := []:
+  od:
+  #print(minsList_ID):
+  #print(minsList_ID[1,4][1]):
+  for p from 1 to ColumnDimension(minsList_ID) do  #Adds elms in "ar"-array
+    if minsList_ID[1,p]<>0 then
+      if idealIndex(itom(minsList_ID[1,p][1])[1])<>0 then
+        for q from 1 to numelems(minsList_ID[1,p]) do
+          ar(p-count,q) := minsList_ID[1,p][q]:
+        od:
+      else
+        count := count+1:
+      fi:
+    fi:
+  od:
+  return(ar):
+end:
+createArray_idealZero := proc(dim,mins,minsList)
+  local ar,K,M,minsList_ID,i,m,j,k,o,r1,r4,p,q,count:
+  K           := <0>:
+  M           := []:
+  minsList_ID := <0>:
+  ar          := <0>:
+  count       := 0:
+  for i from 1 to ColumnDimension(minsList) do
+    m := minsList[i]:
+    K(1,i) := [m]:
+  od:
+  for j from 1 to ColumnDimension(mins) do
+    k := mins[j]:
+    if k<>j-1 then
+      for o from 1 to ColumnDimension(K) do
+        if K[1][o][1]=k then
+          K(1,o) := [op(K[1][o]),j-1]:
+          break:
+        fi:
+      od:
+    fi:
+  od:
+  for r1 from 1 to ColumnDimension(K) do
+    for r4 from 1 to numelems(K[1,r1]) do
+      M := [op(M),[dim,K[1,r1][r4],3]]:
+    od:
+    minsList_ID(1,r1) := M:
+    M := []:
+  od:
+  for p from 1 to ColumnDimension(minsList_ID) do
+    if minsList_ID[1,p]<>0 then
+      if idealIndex(itom(minsList_ID[1,p][1])[1])=0 then
+        for q from 1 to numelems(minsList_ID[1,p]) do
+          ar(p-count,q) := minsList_ID[1,p][q]:
+        od:
+      else
+        count := count+1:
+      fi:
+    fi:
+  od:
+  return(ar):
+end:
+
+
+Scripts, creating for graphs with 2 and 3 edges first an array of all the non isomorphic graphs that represents the non simple C*-algebras, then an array with all the non isomorphic graphs representing the simple C*-algebras (ar2,ar2_zero,ar3,ar3_zero). Scripts have been outcommented, since they take time, and the data is already acessable.
+(*K:=2:                                                #Antal knuder i graf / dimension af matrice
+MINS2     :=[seq(minimizei_o(K,i),i=0..3^(K^2)-1)]:  (*Liste over index, hvilken iso-klasse tilhÃ¸rer en given graf/matrice/tal (81 styk)*)
+MINSSET2  := convert(MINS2,set):                     #Set uden dubletter (45 styk)
+MINSLIST2 := convert(MINSSET2,list):                 #Liste over iso-klasser (45 styk)
+ar2 := createArray(K,MINS2,MINSLIST2):
+setArray(ar2,z_ar2):
+ar2_zero := createArray_idealZero(K,MINS2,MINSLIST2):
+setArray(ar2_zero,z_ar2_zero):*)
+
+(*
+K:=3:                                                #Antal knuder i graf / dimension af matrice
+MINS3     :=[seq(minimizei_o(K,i),i=0..3^(K^2)-1)]:  (*Liste over index, hvilken iso-klasse tilhÃ¸rer en given graf/matrice/tal (19000 styk)*)
+MINSSET3  := convert(MINS3,set):                     #Set uden dubletter (3411 styk)
+MINSLIST3 := convert(MINSSET3,list):                 #Liste over iso-klasser (3411 styk)
+ar3 := createArray(K,MINS3,MINSLIST3):
+setArray(ar3,z_ar3):
+ar3_zero := createArray_zero(K,MINS3,MINSLIST3):
+setArray(ar3_zero,z_ar3_zero):
+*)
+Moves on graphs
+MoveR - Works for matrices with all entries
+RowCol := proc(diagonal,matrix)
+  local j,k:
+  global Rw,Cl,rw,cl,dim,count:        #global variables
+  dim   := RowDimension(matrix):       #matrix-dimension
+  Rw := []:
+  Cl := []:
+  count := 0:
+  for k from 1 to dim do          #details d'th row
+    if matrix[diagonal,k]<>0 then
+      if matrix[diagonal,k]=2 then
+        Rw := [op(Rw), [k,matrix[diagonal,k]]]: #global rowdetails
+        count := count+1:
+      else
+      Rw := [op(Rw), [k,matrix[diagonal,k]]]:   #global rowdetails
+      fi:
+    fi:
+  od:
+  for j from 1 to dim do          #details d'th col
+    if matrix[j,diagonal]<>0 then
+      Cl := [op(Cl), [j,matrix[j,diagonal]]]: #global coldetails
+    fi:
+  od:
+  rw := numelems(Rw):             #global R#
+  cl := numelems(Cl):             #global C#
+  return([Rw,Cl]);                #Just for checkup
+end:
+moveR_possible := proc(diagonal,matrix)
+  local c:
+  c := -1:
+  if cl=0 and rw=0 then
+    #print("Isolated vertex - NO R"):
+  elif matrix[diagonal,diagonal]=0 then
+    if cl=0 and count=0 then      #Source (cl empty AND vertex regular) -> 0
+      c := 0:
+      elif cl=1 then                #Cl one elm, more below
+      if rw=0 then                #Sink
+        #print("Sink - NO R"):
+      elif rw=1 then              #Rw one elm, more below
+        if Rw[1][2]>1 then        #Multiple edges out
+          #print("Multiple OUT - NO R"):
+        elif Cl[1][2]=1 then      #ONE edge into d, more below (regular1)
+          c := 1:                 # -> 1
+        elif Cl[1][2]=2 then      #INF edge into d, more below (regular2)
+          c := 2:                 # -> 2
+        elif Cl[1][2]>2 then      #2 or more edge, more below (regular3)
+          c := 3:                 # -> 3
+        fi:
+      else                        #rw>1, ie. edges OUT to more vertices
+        #print("OUT to more edges - NO R"):
+      fi:
+    elif cl>1 and rw=0 then       #cl>1, ie. edges IN from more vertices
+      #print("Edges IN from more vertices + Sink - NO R"):
+    else
+      #print("Edges IN from more vertices OR source NOT regular - NO R"):
+    fi:
+  else                            #not 0 in diagonal, ie. loops
+    #print("Loops - NO R"):
+  fi:
+  return(c):
+end:
+moveR:= proc(d,m)
+  local C,D,m_temp,Rs,R1,R2,R_1,i,j,k:
+  m_temp := Matrix(m):             #Copy of m, for later use
+  if moveR_possible(d,m)=-1 then   #NO moveR
+    #return([]):
+  elif moveR_possible(d,m)=0 then  #moveR (source)
+    C := DeleteRow(m,d):
+    D := DeleteColumn(C,d):
+    return(D):
+  elif moveR_possible(d,m)=1 then  #moveR (regular1), now  check value of place
+    if m[Cl[1][1],Rw[1][1]]=2 then         # "above" row-value; =2 -> 2 OR
+      m_temp[Cl[1][1],Rw[1][1]] := 2:
+      C := DeleteRow(m_temp,d):
+      D := DeleteColumn(C,d):
+      return(D):
+    elif m[Cl[1][1],Rw[1][1]]=1 then       # =1 -> 3 (ie. value 2) OR
+      m_temp[Cl[1][1],Rw[1][1]] := 3:
+      C := DeleteRow(m_temp,d):
+      D := DeleteColumn(C,d):
+      return(D):
+    elif m[Cl[1][1],Rw[1][1]]>2 then       # =n -> n+1 OR
+      m_temp[Cl[1][1],Rw[1][1]] := m[Cl[1][1],Rw[1][1]]+1:
+      C := DeleteRow(m_temp,d):
+      D := DeleteColumn(C,d):
+      return(D):
+    else                                   # =0 -> 1
+      m_temp[Cl[1][1],Rw[1][1]] := 1:
+      C := DeleteRow(m_temp,d):
+      D := DeleteColumn(C,d):
+      return(D):
+    fi:
+  elif moveR_possible(d,m)=2 then  #moveR (regular2), always n -> 2
+    m_temp[Cl[1][1],Rw[1][1]] := 2;
+    C := DeleteRow(m_temp,d):
+    D := DeleteColumn(C,d):
+    return(D):
+  elif moveR_possible(d,m)=3 then  #moveR (regular3), now  check value of place
+    if m[Cl[1][1],Rw[1][1]]=2 then         # "above" row-value; =2 -> 2 OR
+      m_temp[Cl[1][1],Rw[1][1]] := 2:
+      C := DeleteRow(m_temp,d):
+      D := DeleteColumn(C,d):
+      return(D):
+    elif m[Cl[1][1],Rw[1][1]]=1 then       #  =1 -> n+(>2-1) OR
+      m_temp[Cl[1][1],Rw[1][1]] := Cl[1][2]+1:
+      C := DeleteRow(m_temp,d):
+      D := DeleteColumn(C,d):
+      return(D):
+    elif m[Cl[1][1],Rw[1][1]]>2 then       # n -> n+1 OR
+      m_temp[Cl[1][1],Rw[1][1]] := m[Cl[1][1],Rw[1][1]]+Cl[1][2]-1:
+      C := DeleteRow(m_temp,d):
+      D := DeleteColumn(C,d):
+      return(D):
+    else                                   # 0 -> n
+      m_temp[Cl[1][1],Rw[1][1]] := Cl[1][2]:
+      C := DeleteRow(m_temp,d):
+      D := DeleteColumn(C,d):
+      return(D):
+    fi:
+  fi:
+end:
+
+MoveO - works for matrices with entries in {0,1,2,3} and includes new versions O_INF
+RowCol := proc(diagonal,matrix)
+  local j,k:
+  global Rw,Cl,rw,cl,dim,count:        #global variables
+  dim   := RowDimension(matrix):       #matrix-dimension
+  Rw := []:
+  Cl := []:
+  count := 0:
+  for k from 1 to dim do          #details d'th row
+    if matrix[diagonal,k]<>0 then
+      if matrix[diagonal,k]=2 then
+        Rw := [op(Rw), [k,matrix[diagonal,k]]]: #global rowdetails
+        count := count+1:
+      else
+      Rw := [op(Rw), [k,matrix[diagonal,k]]]:   #global rowdetails
+      fi:
+    fi:
+  od:
+  for j from 1 to dim do          #details d'th col
+    if matrix[j,diagonal]<>0 then
+      Cl := [op(Cl), [j,matrix[j,diagonal]]]: #global coldetails
+    fi:
+  od:
+  rw := numelems(Rw):             #global R#
+  cl := numelems(Cl):             #global C#
+  return([Rw,Cl]);                #Just for checkup
+end:
+moveO_possible := proc(diagonal,matrix)
+  local i:
+  global c_4,c_5,c_6:
+  c_4 := 0:
+  c_5 := 0:
+  c_6 := 0:
+  for i from 1 to rw do
+    if Rw[i][2]=2 then
+      c_4 := c_4+1:              #counts #-infinity edges
+    elif Rw[i][2]=3 then
+      c_5 := c_5+1:              #counts #-double edges
+    fi:
+  od:
+  if rw=0 and cl=0 then          #NO connection, isolated vertex
+    #print("Isolated vertex - NO O"):
+  elif rw=0 then                 #NO outgoing edges - SINK!!
+    #print("Sink - NO O"):
+  elif rw=1 and c_5=0 then      #ONE outgoing 1-edge OR INF-edge!!
+    #print("ONE 1/INF-edge OUT - NO O"):
+  elif c_4>1 then                #MULT INF edges OUT!!
+    #print("multiple INF OUT - NO O")
+  else                           #ie. if either rw>1 or c_5>0 or
+                                 #  both: more edges OUT - OK
+    c_6 := 1:
+  fi:
+  return(c_6):
+end:
+moveO := proc(d,m)
+  local L1,L2,L3,m_temp,extO,c,i1,i2,j,k,n1,n2,n3,n4,n5:
+  L1   := []:
+  L2   := []:
+  L3   := []:
+  c    := 0:
+  if moveO_possible(d,m)=1 then  #check if moveO possible
+    extO   := rw+c_5-1:          #counts matrix-extension
+    m_temp := Matrix(dim+extO):  #produce empty extended matrix
+
+    for i1 from 1 to dim do      #seperate all elms in d'th row/col-
+      for i2 from 1 to dim do    # "cross" from all other elms
+        L1 := [op(L1), [i1,i2]]: #L1: all places in orig matrix
+      od:
+    od:
+
+    for j in L1 do
+      if j[1]=d or j[2]=d then
+        L2 := [op(L2), j]:       #L2: ONLY places in row/col-"cross"
+      else
+        L3 := [op(L3), j]:       #L3: all other places
+      fi:
+    od:
+
+    for k in L3 do              #insert elms in all "L3-places"
+      if k[1]<d and k[2]<d then
+        m_temp[k[1],k[2]] := m[k[1],k[2]]:
+      elif k[1]<d and k[2]>d then
+        m_temp[k[1],k[2]+extO] := m[k[1],k[2]]:
+      elif k[1]>d and k[2]<d then
+        m_temp[k[1]+extO,k[2]] := m[k[1],k[2]]:
+      elif k[1]>d and k[2]>d then
+        m_temp[k[1]+extO,k[2]+extO] := m[k[1],k[2]]:
+      fi:
+    od:
+
+    for n1 in L2 do             #insert elms in correct "L2-places"
+      if n1[1]<d then           #repeat all non-central elms horizontally
+        for n2 from 0 to extO do
+          m_temp[n1[1],n1[2]+n2] := m[n1[1],n1[2]]:
+        od:
+      elif n1[1]>d then         #above above of center, here below of center
+        for n3 from 0 to extO do
+          m_temp[n1[1]+extO,n1[2]+n3] := m[n1[1],n1[2]]:
+        od:
+      else
+        if n1[2]<d then         #left of center, leave correct elm(s)
+          if m[n1[1],n1[2]]=3 then                #special for 3
+            m_temp[n1[1]+c,n1[2]]   := 1:
+            m_temp[n1[1]+c+1,n1[2]] := 1:
+            c := c+2:
+          elif m[n1[1],n1[2]]<>0 then             #normal for 1/2/>3
+            m_temp[n1[1]+c,n1[2]]   := m[n1[1],n1[2]]:
+            c := c+1:
+          fi:
+        elif n1[2]=d then       #in center, repeat correct elm(s)
+          if m[n1[1],n1[2]]=3 then                #special for 3
+            for n4 from 0 to extO do
+              m_temp[n1[1]+c,n1[2]+n4]   := 1:
+              m_temp[n1[1]+c+1,n1[2]+n4] := 1:
+            od:
+            c := c+2:
+          elif m[n1[1],n1[2]]<>0 then             #normal for 1/2/>3
+            for n5 from 0 to extO do
+              m_temp[n1[1]+c,n1[2]+n5]   := m[n1[1],n1[2]]:
+            od:
+            c := c+1:
+          fi:
+        else                    #right of center, leave correct elm(s)
+          if m[n1[1],n1[2]]=3 then                #special for 3
+            m_temp[n1[1]+c,n1[2]+extO]   := 1:
+            m_temp[n1[1]+c+1,n1[2]+extO] := 1:
+            c := c+2:
+          elif m[n1[1],n1[2]]<>0 then             #normal for 1/2/>3
+            m_temp[n1[1]+c,n1[2]+extO]   := m[n1[1],n1[2]]:
+            c := c+1:
+          fi:
+        fi:
+      fi:
+    od:
+    return(m_temp):
+  else
+    #return([]):
+  fi:                           #no moveI, ie. return empty list
+end:
+moveO_possible_INF := proc(diagonal,matrix)
+  local i:
+  global c_4,c_5,c_6:
+  c_4 := 0:
+  c_5 := 0:
+  c_6 := 0:
+  for i from 1 to rw do
+    if Rw[i][2]=2 then
+      c_4 := c_4+1:              #counts #-infinity edges
+    elif Rw[i][2]=3 then
+      c_5 := c_5+1:              #counts #-double edges
+    fi:
+  od:
+  if rw=0 and cl=0 then          #NO connection, isolated vertex
+    #print("Isolated vertex - NO O"):
+  elif rw=0 then                 #NO outgoing edges - SINK!!
+    #print("Sink - NO O"):
+  elif rw=1 and c_5=0 and c_4=0 then      #ONE outgoing 1-edge OR INF-edge!!
+    #print("ONE 1-edge OUT - NO O"):
+  elif c_4>1 then                #MULT INF edges OUT!!
+    #print("multiple INF OUT - NO O")
+  else                           #ie. if either rw>1 or c_5>0 or c_4=1 or
+                                 #  some combination: more edges OUT - OK
+    c_6 := 1:
+  fi:
+  return(c_6):
+end:
+moveO_INF := proc(d,m)
+  local L1,L2,L3,m_temp,extO,c,i1,i2,j,k,n1,n2,n3,n4,n5:
+  L1   := []:
+  L2   := []:
+  L3   := []:
+  c    := 0:
+
+  if moveO_possible_INF(d,m)=1 then  #check if moveO possible
+
+    if c_4=1 then
+
+
+      extO   := rw+c_5:          #counts matrix-extension
+      m_temp := Matrix(dim+extO):  #produce empty extended matrix
+
+      for i1 from 1 to dim do      #seperate all elms in d'th row/col-
+        for i2 from 1 to dim do    # "cross" from all other elms
+          L1 := [op(L1), [i1,i2]]: #L1: all places in orig matrix
+        od:
+      od:
+
+      for j in L1 do
+        if j[1]=d or j[2]=d then
+          L2 := [op(L2), j]:       #L2: ONLY places in row/col-"cross"
+        else
+          L3 := [op(L3), j]:       #L3: all other places
+        fi:
+      od:
+
+      for k in L3 do              #insert elms in all "L3-places"
+        if k[1]<d and k[2]<d then
+          m_temp[k[1],k[2]] := m[k[1],k[2]]:
+        elif k[1]<d and k[2]>d then
+          m_temp[k[1],k[2]+extO] := m[k[1],k[2]]:
+        elif k[1]>d and k[2]<d then
+          m_temp[k[1]+extO,k[2]] := m[k[1],k[2]]:
+        elif k[1]>d and k[2]>d then
+          m_temp[k[1]+extO,k[2]+extO] := m[k[1],k[2]]:
+        fi:
+      od:
+
+      for n1 in L2 do             #insert elms in correct "L2-places"
+        if n1[1]<d then           #repeat all non-central elms horizontally
+          for n2 from 0 to extO do
+            m_temp[n1[1],n1[2]+n2] := m[n1[1],n1[2]]:
+          od:
+        elif n1[1]>d then         #above above of center, here below of center
+          for n3 from 0 to extO do
+            m_temp[n1[1]+extO,n1[2]+n3] := m[n1[1],n1[2]]:
+          od:
+        else
+          if n1[2]<d then         #left of center, leave correct elm(s)
+            if m[n1[1],n1[2]]=3 then                #special for 3
+              m_temp[n1[1]+c,n1[2]]   := 1:
+              m_temp[n1[1]+c+1,n1[2]] := 1:
+              c := c+2:
+            elif m[n1[1],n1[2]]=2 then              #special for 2
+              m_temp[n1[1]+c,n1[2]]   := 2:
+              m_temp[n1[1]+c+1,n1[2]] := 1:
+              c := c+2:
+            elif m[n1[1],n1[2]]=1 or m[n1[1],n1[2]]>3 then   #normal for 1/>3
+            m_temp[n1[1]+c,n1[2]]   := m[n1[1],n1[2]]:
+            c := c+1:
+          fi:
+        elif n1[2]=d then       #in center, repeat correct elm(s)
+          if m[n1[1],n1[2]]=3 then                #special for 3
+            for n4 from 0 to extO do
+              m_temp[n1[1]+c,n1[2]+n4]   := 1:
+              m_temp[n1[1]+c+1,n1[2]+n4] := 1:
+            od:
+            c := c+2:
+          elif m[n1[1],n1[2]]=2 then              #special for 2
+            for n4 from 0 to extO do
+              m_temp[n1[1]+c,n1[2]+n4]   := 2:
+              m_temp[n1[1]+c+1,n1[2]+n4] := 1:
+            od:
+            c := c+2:
+          elif m[n1[1],n1[2]]=1 or m[n1[1],n1[2]]>3 then    #normal for 1/>3
+            for n5 from 0 to extO do
+              m_temp[n1[1]+c,n1[2]+n5]   := m[n1[1],n1[2]]:
+            od:
+            c := c+1:
+          fi:
+        else                    #right of center, leave correct elm(s)
+          if m[n1[1],n1[2]]=3 then                #special for 3
+            m_temp[n1[1]+c,n1[2]+extO]   := 1:
+            m_temp[n1[1]+c+1,n1[2]+extO] := 1:
+            c := c+2:
+          elif m[n1[1],n1[2]]=2 then                #special for 2
+            m_temp[n1[1]+c,n1[2]+extO]   := 2:
+            m_temp[n1[1]+c+1,n1[2]+extO] := 1:
+            c := c+2:
+          elif m[n1[1],n1[2]]=1 or m[n1[1],n1[2]]>3 then   #normal for 1/>3
+            m_temp[n1[1]+c,n1[2]+extO]   := m[n1[1],n1[2]]:
+            c := c+1:
+          fi:
+        fi:
+      fi:
+      od:
+      return(m_temp):
+
+    else
+
+
+      extO   := rw+c_5-1:          #counts matrix-extension
+      m_temp := Matrix(dim+extO):  #produce empty extended matrix
+
+      for i1 from 1 to dim do      #seperate all elms in d'th row/col-
+        for i2 from 1 to dim do    # "cross" from all other elms
+          L1 := [op(L1), [i1,i2]]: #L1: all places in orig matrix
+        od:
+      od:
+
+      for j in L1 do
+        if j[1]=d or j[2]=d then
+          L2 := [op(L2), j]:       #L2: ONLY places in row/col-"cross"
+        else
+          L3 := [op(L3), j]:       #L3: all other places
+        fi:
+      od:
+
+      for k in L3 do              #insert elms in all "L3-places"
+        if k[1]<d and k[2]<d then
+          m_temp[k[1],k[2]] := m[k[1],k[2]]:
+        elif k[1]<d and k[2]>d then
+          m_temp[k[1],k[2]+extO] := m[k[1],k[2]]:
+        elif k[1]>d and k[2]<d then
+          m_temp[k[1]+extO,k[2]] := m[k[1],k[2]]:
+        elif k[1]>d and k[2]>d then
+          m_temp[k[1]+extO,k[2]+extO] := m[k[1],k[2]]:
+        fi:
+      od:
+
+      for n1 in L2 do             #insert elms in correct "L2-places"
+        if n1[1]<d then           #repeat all non-central elms horizontally
+          for n2 from 0 to extO do
+            m_temp[n1[1],n1[2]+n2] := m[n1[1],n1[2]]:
+          od:
+        elif n1[1]>d then         #above above of center, here below of center
+          for n3 from 0 to extO do
+            m_temp[n1[1]+extO,n1[2]+n3] := m[n1[1],n1[2]]:
+          od:
+        else
+          if n1[2]<d then         #left of center, leave correct elm(s)
+            if m[n1[1],n1[2]]=3 then                #special for 3
+              m_temp[n1[1]+c,n1[2]]   := 1:
+              m_temp[n1[1]+c+1,n1[2]] := 1:
+              c := c+2:
+            elif m[n1[1],n1[2]]<>0 then             #normal for 1/2/>3
+              m_temp[n1[1]+c,n1[2]]   := m[n1[1],n1[2]]:
+              c := c+1:
+            fi:
+          elif n1[2]=d then       #in center, repeat correct elm(s)
+            if m[n1[1],n1[2]]=3 then                #special for 3
+              for n4 from 0 to extO do
+                m_temp[n1[1]+c,n1[2]+n4]   := 1:
+                m_temp[n1[1]+c+1,n1[2]+n4] := 1:
+              od:
+              c := c+2:
+            elif m[n1[1],n1[2]]<>0 then             #normal for 1/2/>3
+              for n5 from 0 to extO do
+                m_temp[n1[1]+c,n1[2]+n5]   := m[n1[1],n1[2]]:
+              od:
+              c := c+1:
+            fi:
+          else                    #right of center, leave correct elm(s)
+            if m[n1[1],n1[2]]=3 then                #special for 3
+              m_temp[n1[1]+c,n1[2]+extO]   := 1:
+              m_temp[n1[1]+c+1,n1[2]+extO] := 1:
+              c := c+2:
+            elif m[n1[1],n1[2]]<>0 then             #normal for 1/2/>3
+              m_temp[n1[1]+c,n1[2]+extO]   := m[n1[1],n1[2]]:
+              c := c+1:
+            fi:
+          fi:
+        fi:
+      od:
+      return(m_temp):
+
+    fi:
+  else
+
+    #return([]):
+
+  fi:                          #no moveI, ie. return empty list
+
+end:
+MoveI - works for matrices with entries in {0,1,2,3} and includes new versions I_INF
+RowCol := proc(diagonal,matrix)
+  local j,k:
+  global Rw,Cl,rw,cl,dim,count:        #global variables
+  dim   := RowDimension(matrix):       #matrix-dimension
+  Rw := []:
+  Cl := []:
+  count := 0:
+  for k from 1 to dim do          #details d'th row
+    if matrix[diagonal,k]<>0 then
+      if matrix[diagonal,k]=2 then
+        Rw := [op(Rw), [k,matrix[diagonal,k]]]: #global rowdetails
+        count := count+1:
+      else
+      Rw := [op(Rw), [k,matrix[diagonal,k]]]:   #global rowdetails
+      fi:
+    fi:
+  od:
+  for j from 1 to dim do          #details d'th col
+    if matrix[j,diagonal]<>0 then
+      Cl := [op(Cl), [j,matrix[j,diagonal]]]: #global coldetails
+    fi:
+  od:
+  rw := numelems(Rw):             #global R#
+  cl := numelems(Cl):             #global C#
+  return([Rw,Cl]);                #Just for checkup
+end:
+moveI_possible := proc(diagonal,matrix)
+  local i:
+  global c_1,c_2,c_3:
+  c_1 := 0:
+  c_2 := 0:
+  c_3 := 0:
+  for i from 1 to cl do
+    if Cl[i][2]=2 then
+      c_1 := c_1+1:              #counts #-infinity edges
+    elif Cl[i][2]=3 then
+      c_2 := c_2+1:              #counts #-double edges
+    fi:
+  od:
+  if cl=0 and rw=0 then          #NO connection, isolated vertex
+    #print("Isolated vertex - NO I"):
+  elif cl=0 or count>0 or rw=0 then      #NO incoming edges OR INF OUT OR SINK, ie. in both cases not-regular!! !!!!RETTET SIDSTE TILFÃJELSE!!!!
+    #print("Source OR not REGULAR - NO I"):
+  elif cl=1 and c_2=0 then       #ONE incoming either 1-edge OR INF-edge, OR ONE incoming 3/4/5...-edge, limit of MY moveI!!
+    #print("ONE 1/INF-edge IN - NO I"):
+  else                           #ie. if either cl>1 or c_2>0 or
+                                 #  both: more edges IN - OK
+    c_3 := 1:
+  fi:
+  return(c_3):
+end:
+moveI := proc(d,m)
+  local L1,L2,L3,m_temp,extI,c,i1,i2,j,k,n1,n2,n3,n4,n5:
+  L1   := []:
+  L2   := []:
+  L3   := []:
+  c    := 0:
+  if moveI_possible(d,m)=1 then  #check if moveI possible
+    extI   := cl+c_2-1:          #counts matrix-extension
+    m_temp := Matrix(dim+extI):  #produce empty extended matrix
+
+    for i1 from 1 to dim do      #seperate all elms in d'th row/col-
+      for i2 from 1 to dim do    # "cross" from all other elms
+        L1 := [op(L1), [i1,i2]]: #L1: all places in orig matrix
+      od:
+    od:
+
+    for j in L1 do
+      if j[1]=d or j[2]=d then
+        L2 := [op(L2), j]:       #L2: ONLY places in row/col-"cross"
+      else
+        L3 := [op(L3), j]:       #L3: all other places
+      fi:
+    od:
+
+    for k in L3 do              #insert elms in all "L3-places"
+      if k[1]<d and k[2]<d then
+        m_temp[k[1],k[2]] := m[k[1],k[2]]:
+      elif k[1]<d and k[2]>d then
+        m_temp[k[1],k[2]+extI] := m[k[1],k[2]]:
+      elif k[1]>d and k[2]<d then
+        m_temp[k[1]+extI,k[2]] := m[k[1],k[2]]:
+      elif k[1]>d and k[2]>d then
+        m_temp[k[1]+extI,k[2]+extI] := m[k[1],k[2]]:
+      fi:
+    od:
+
+    for n1 in L2 do             #insert elms in correct "L2-places"
+      if n1[2]<d then           #repeat all non-central elms vertically
+        for n2 from 0 to extI do
+          m_temp[n1[1]+n2,n1[2]] := m[n1[1],n1[2]]:
+        od:
+      elif n1[2]>d then         #above right of center, here left of center
+        for n3 from 0 to extI do
+          m_temp[n1[1]+n3,n1[2]+extI] := m[n1[1],n1[2]]:
+        od:
+      else
+        if n1[1]<d then         #above center, leave correct elm(s)
+          if m[n1[1],n1[2]]=3 then                #special for 3
+            m_temp[n1[1],n1[2]+c]   := 1:
+            m_temp[n1[1],n1[2]+c+1] := 1:
+            c := c+2:
+          elif m[n1[1],n1[2]]<>0 then             #normal for 1/2/>3
+            m_temp[n1[1],n1[2]+c]   := m[n1[1],n1[2]]:
+            c := c+1:
+          fi:
+        elif n1[1]=d then       #in center, repeat correct elm(s)
+          if m[n1[1],n1[2]]=3 then                #special for 3
+            for n4 from 0 to extI do
+              m_temp[n1[1]+n4,n1[2]+c]   := 1:
+              m_temp[n1[1]+n4,n1[2]+c+1] := 1:
+            od:
+            c := c+2:
+          elif m[n1[1],n1[2]]<>0 then             #normal for 1/2/>3
+            for n5 from 0 to extI do
+              m_temp[n1[1]+n5,n1[2]+c]   := m[n1[1],n1[2]]:
+            od:
+            c := c+1:
+          fi:
+        else                    #below center, leave correct elm(s)
+          if m[n1[1],n1[2]]=3 then                #special for 3
+            m_temp[n1[1]+extI,n1[2]+c]   := 1:
+            m_temp[n1[1]+extI,n1[2]+c+1] := 1:
+            c := c+2:
+          elif m[n1[1],n1[2]]<>0 then             #normal for 1/2/>3
+            m_temp[n1[1]+extI,n1[2]+c]   := m[n1[1],n1[2]]:
+            c := c+1:
+          fi:
+        fi:
+      fi:
+    od:
+    return(m_temp):
+  else
+    #return([]):
+  fi:                           #no moveI, ie. return empty list
+end:
+moveI_possible_INF := proc(diagonal,matrix)
+  local i:
+  global c_1,c_2,c_3:
+  c_1 := 0:
+  c_2 := 0:
+  c_3 := 0:
+  for i from 1 to cl do
+    if Cl[i][2]=2 then
+      c_1 := c_1+1:              #counts #-infinity edges
+    elif Cl[i][2]=3 then
+      c_2 := c_2+1:              #counts #-double edges
+    fi:
+  od:
+  if cl=0 and rw=0 then          #NO connection, isolated vertex
+    #print("Isolated vertex - NO I"):
+  elif cl=0 or count>0 or rw=0 then      #NO incoming edges OR INF OUT OR SINK, ie. in both cases not-regular!! !!!!RETTET SIDSTE TILFÃJELSE!!!!
+    #print("Source OR not REGULAR - NO I"):
+  elif cl=1 and c_2=0 and c_1=0 then       #ONE incoming either 1-edge OR INF-edge, OR ONE incoming 3/4/5...-edge, limit of MY moveI!!
+    #print("ONE 1-edge IN - NO I"):
+  else                           #ie. if either cl>1 or c_2>0 or c_1>0 or
+                                 #  both: more edges IN - OK
+    c_3 := 1:
+  fi:
+  return(c_3):
+end:
+moveI_INF := proc(d,m)
+  local L1,L2,L3,m_temp,extI,c,i1,i2,j,k,n1,n2,n3,n4,n5:
+  L1   := []:
+  L2   := []:
+  L3   := []:
+  c    := 0:
+  if moveI_possible_INF(d,m)=1 then  #check if moveI possible
+
+    if c_1>0 then
+
+    extI   := cl+c_2-1+c_1:          #counts matrix-extension
+    m_temp := Matrix(dim+extI):  #produce empty extended matrix
+
+    for i1 from 1 to dim do      #seperate all elms in d'th row/col-
+      for i2 from 1 to dim do    # "cross" from all other elms
+        L1 := [op(L1), [i1,i2]]: #L1: all places in orig matrix
+      od:
+    od:
+
+    for j in L1 do
+      if j[1]=d or j[2]=d then
+        L2 := [op(L2), j]:       #L2: ONLY places in row/col-"cross"
+      else
+        L3 := [op(L3), j]:       #L3: all other places
+      fi:
+    od:
+
+    for k in L3 do              #insert elms in all "L3-places"
+      if k[1]<d and k[2]<d then
+        m_temp[k[1],k[2]] := m[k[1],k[2]]:
+      elif k[1]<d and k[2]>d then
+        m_temp[k[1],k[2]+extI] := m[k[1],k[2]]:
+      elif k[1]>d and k[2]<d then
+        m_temp[k[1]+extI,k[2]] := m[k[1],k[2]]:
+      elif k[1]>d and k[2]>d then
+        m_temp[k[1]+extI,k[2]+extI] := m[k[1],k[2]]:
+      fi:
+    od:
+
+    for n1 in L2 do             #insert elms in correct "L2-places"
+      if n1[2]<d then           #repeat all non-central elms vertically
+        for n2 from 0 to extI do
+          m_temp[n1[1]+n2,n1[2]] := m[n1[1],n1[2]]:
+        od:
+      elif n1[2]>d then         #above right of center, here left of center
+        for n3 from 0 to extI do
+          m_temp[n1[1]+n3,n1[2]+extI] := m[n1[1],n1[2]]:
+        od:
+      else
+        if n1[1]<d then         #above center, leave correct elm(s)
+          if m[n1[1],n1[2]]=3 then                #special for 3
+            m_temp[n1[1],n1[2]+c]   := 1:
+            m_temp[n1[1],n1[2]+c+1] := 1:
+            c := c+2:
+          elif m[n1[1],n1[2]]=2 then               #special for 2
+            m_temp[n1[1],n1[2]+c]   := 2:
+            m_temp[n1[1],n1[2]+c+1] := 1:
+            c := c+2:
+          elif m[n1[1],n1[2]]=1 or m[n1[1],n1[2]]>3 then     #normal for 1/>3
+            m_temp[n1[1],n1[2]+c]   := m[n1[1],n1[2]]:
+            c := c+1:
+          fi:
+        elif n1[1]=d then       #in center, repeat correct elm(s)
+          if m[n1[1],n1[2]]=3 then                #special for 3
+            for n4 from 0 to extI do
+              m_temp[n1[1]+n4,n1[2]+c]   := 1:
+              m_temp[n1[1]+n4,n1[2]+c+1] := 1:
+            od:
+            c := c+2:
+          elif m[n1[1],n1[2]]=2 then              #special for 2
+            for n4 from 0 to extI do
+              m_temp[n1[1]+n4,n1[2]+c]   := 2:
+              m_temp[n1[1]+n4,n1[2]+c+1] := 1:
+            od:
+            c := c+2:
+          elif m[n1[1],n1[2]]=1 or m[n1[1],n1[2]]>3 then   #normal for 1/>3
+            for n5 from 0 to extI do
+              m_temp[n1[1]+n5,n1[2]+c]   := m[n1[1],n1[2]]:
+            od:
+            c := c+1:
+          fi:
+        else                    #below center, leave correct elm(s)
+          if m[n1[1],n1[2]]=3 then                #special for 3
+            m_temp[n1[1]+extI,n1[2]+c]   := 1:
+            m_temp[n1[1]+extI,n1[2]+c+1] := 1:
+            c := c+2:
+          elif m[n1[1],n1[2]]=2 then                #special for 2
+            m_temp[n1[1]+extI,n1[2]+c]   := 2:
+            m_temp[n1[1]+extI,n1[2]+c+1] := 1:
+            c := c+2:
+          elif m[n1[1],n1[2]]<>0 then             #normal for 1/>3
+            m_temp[n1[1]+extI,n1[2]+c]   := m[n1[1],n1[2]]:
+            c := c+1:
+          fi:
+        fi:
+      fi:
+    od:
+    return(m_temp):
+
+    else
+
+    extI   := cl+c_2-1:          #counts matrix-extension
+    m_temp := Matrix(dim+extI):  #produce empty extended matrix
+
+    for i1 from 1 to dim do      #seperate all elms in d'th row/col-
+      for i2 from 1 to dim do    # "cross" from all other elms
+        L1 := [op(L1), [i1,i2]]: #L1: all places in orig matrix
+      od:
+    od:
+
+    for j in L1 do
+      if j[1]=d or j[2]=d then
+        L2 := [op(L2), j]:       #L2: ONLY places in row/col-"cross"
+      else
+        L3 := [op(L3), j]:       #L3: all other places
+      fi:
+    od:
+
+    for k in L3 do              #insert elms in all "L3-places"
+      if k[1]<d and k[2]<d then
+        m_temp[k[1],k[2]] := m[k[1],k[2]]:
+      elif k[1]<d and k[2]>d then
+        m_temp[k[1],k[2]+extI] := m[k[1],k[2]]:
+      elif k[1]>d and k[2]<d then
+        m_temp[k[1]+extI,k[2]] := m[k[1],k[2]]:
+      elif k[1]>d and k[2]>d then
+        m_temp[k[1]+extI,k[2]+extI] := m[k[1],k[2]]:
+      fi:
+    od:
+
+    for n1 in L2 do             #insert elms in correct "L2-places"
+      if n1[2]<d then           #repeat all non-central elms vertically
+        for n2 from 0 to extI do
+          m_temp[n1[1]+n2,n1[2]] := m[n1[1],n1[2]]:
+        od:
+      elif n1[2]>d then         #above right of center, here left of center
+        for n3 from 0 to extI do
+          m_temp[n1[1]+n3,n1[2]+extI] := m[n1[1],n1[2]]:
+        od:
+      else
+        if n1[1]<d then         #above center, leave correct elm(s)
+          if m[n1[1],n1[2]]=3 then                #special for 3
+            m_temp[n1[1],n1[2]+c]   := 1:
+            m_temp[n1[1],n1[2]+c+1] := 1:
+            c := c+2:
+          elif m[n1[1],n1[2]]<>0 then             #normal for 1/2/>3
+            m_temp[n1[1],n1[2]+c]   := m[n1[1],n1[2]]:
+            c := c+1:
+          fi:
+        elif n1[1]=d then       #in center, repeat correct elm(s)
+          if m[n1[1],n1[2]]=3 then                #special for 3
+            for n4 from 0 to extI do
+              m_temp[n1[1]+n4,n1[2]+c]   := 1:
+              m_temp[n1[1]+n4,n1[2]+c+1] := 1:
+            od:
+            c := c+2:
+          elif m[n1[1],n1[2]]<>0 then             #normal for 1/2/>3
+            for n5 from 0 to extI do
+              m_temp[n1[1]+n5,n1[2]+c]   := m[n1[1],n1[2]]:
+            od:
+            c := c+1:
+          fi:
+        else                    #below center, leave correct elm(s)
+          if m[n1[1],n1[2]]=3 then                #special for 3
+            m_temp[n1[1]+extI,n1[2]+c]   := 1:
+            m_temp[n1[1]+extI,n1[2]+c+1] := 1:
+            c := c+2:
+          elif m[n1[1],n1[2]]<>0 then             #normal for 1/2/>3
+            m_temp[n1[1]+extI,n1[2]+c]   := m[n1[1],n1[2]]:
+            c := c+1:
+          fi:
+        fi:
+      fi:
+    od:
+    return(m_temp):
+
+    fi:
+
+  else
+    #return([]):
+  fi:                           #no moveI, ie. return empty list
+end:
+Ideals
+Assisting procedures - saturatedCheck
+ Procedure, that takes dim=dimension of matrix, n=number of vertices in M ("chosen set", the set of vertices we are investigating) and index=the relevant "chosen set", ie. if dim=anything, n=1 then index=1 would mean, we investigate vertex no. 1 for ideals, if dim=4, n=2 and index=3, we are investigating the set M=[1,4], this is our "chosen set". SO, hsIndex returns the row- and column-"coordinates" of this "chosen set", M - in the first case (say dim=3): [1,1;1,2;1,3;2,1;3,1], in the second case: [1,1;1,2;1,3;1,4;2,1;2,4;3,1;3,4;4,1;4,2;4,3,4,4]. With this information, we can check the horisontal elms that are NOT in the set (ie. if M is hereditary), and the vertical elms above/below M AND the elms of these rows NOT above/below M (ie. if M is saturated, and info about Breaking Vertices).
+Then next, we will check hereditary and saturated property as well as Breaking Vertice-property - but that is all in the hereditaryCheck, saturatedCheck,idealIndex below.
+hsIndex := proc(dim,n,index)
+  local L2,L3,i,j,k,l,s,p:
+  global L1,L4:
+  L1 := convert(convert([seq(Sort(i), i in permute(dim,n))],set),list) :
+                          #all permuted elms without repetitions
+  L2 := []:
+  L3 := []:
+  L4 := []:
+  for j in L1 do          #for each elements duplicates the elements
+    L2 := [j]:
+      for k in L2 do
+      L2 := [op(L2), k]:
+      L2 := Flatten(L2):
+      L2 := Sort(L2):
+    od:
+    L3 := [op(L3), L2]:   #list of lists of these duplicates
+  od:
+  for l in L3 do
+    p := permute(l,2):
+    L4 := [op(L4), p]:    #permute these lists, and return list of lists of relevant permutations/"coordinates"
+  od:
+  return(L4[index]);
+end:
+Proc, elmsIndex, der tager et tal (dim) og returnerer "koordinaterne" for alle elms i matrice med dimension dim.
+elmsIndex := proc(dim)    #returns all indexes of matrix
+  local listeI,i1,i2:
+  listeI := []:
+  for i1 from 1 to dim do
+    for i2 from 1 to dim do
+      listeI := [op(listeI), [i1,i2]]:
+    od:
+  od:
+  return(listeI);
+end:
+Procedure, der tager matrice (m), antal knuder i chosen set (n) og hvilke knuder/hvilken permutation (index) og returnerer ??!! (pt. "YES" eller ingenting).
+hereditaryCheck := proc(m,n,index)
+  local dim,list1,list2,list3,list4,L_index,i,j,k,c:
+  dim := RowDimension(m):                 #dimension of matrix
+  list1 := hsIndex(dim,n,index):          #"coordinates" of relevant set (possible ideal)
+  list2 := elmsIndex(dim):                #all "coordinates" in matrix
+  L_index := L1[index]:                   #list of vertices in the chosen set (possible ideal)
+  list3 := []:
+  c := 0:
+  for i in L_index do
+    for j in list2 do
+      if j[1]=i then
+        list3 := [op(list3), j]:          #list of all horizontal "coordinates" for chosen set
+      fi:
+    od:
+  od:
+  list4 := convert(convert(list3,set) minus convert(list1,set),list):
+                                          #list of all horizontal "coordinates" OUTSIDE chosen set
+  for k in list4 do
+    if m[k[1],k[2]]=0 then
+    else
+      c := c+1:
+    fi
+  od:
+  return(c):
+end:
+Procedure, der tager matrice (m), antal knuder i chosen set (n) og hvilke knuder/hvilken permutation (index) og returnerer ??!!
+saturatedCheck := proc(m,n,index)
+  local dim,list1,list2,list3,list4,list5,list6,list7,list8,list9,list10,A,L_index,L_rest,i,j,k,l,o,p,q,s,c,d,bv,e,f:
+  dim := RowDimension(m):                 #dimension of matrix
+  list1 := hsIndex(dim,n,index):          #"coordinates" of chosen set (possible ideal)
+  list2 := elmsIndex(dim):                #all "coordinates" in matrix
+  L_index := L1[index]:                   #list of vertices in the chosen set (possible ideal)
+  L_rest := convert((convert([seq(i, i=1..dim)],set) minus convert(L_index,set)),list):
+                                          #list of the complement to L_index/vertices of chosen set
+  list3 := []:
+  list5 := []:
+  list6 := []:
+  list7 := []:                            #d-vÃ¦rdier til analyse af hvilken type ideal
+  list8 := []:
+  list9 := [[[0]]]:
+  list10 := []:
+  c := 0:
+  d := 0:
+  e := 0:
+  f := 0:
+  for i in L_index do
+    for j in list2 do
+      if j[2]=i then
+        list3 := [op(list3), j]:          #list of all vertical "coordinates" for chosen set
+      fi:
+    od:
+  od:
+  list4 := convert(convert(list3,set) minus convert(list1,set),list):
+
+  for k in L_rest do
+    for l in L_index do
+      list5 := [op(list5), m[k,l]]:       #list of k'th row above/below chosen set
+    od:
+    #print(list5);
+    if 2 in list5 then                    #2 ab/be k'th row, infty IN
+      c := 2:
+    elif 1 in list5 or 3 in list5 or 4 in list5 then
+      c := 1:                             #1,3 or 4 ab/be k'th row, ie. finite IN (not0)
+    fi:
+    #print(c):
+    if c=0 then                           #If no IN, don't check, possible ideal (d=1)      #print("All 0, no action"):
+      d := 1:
+    else                                  #If some IN, check OURSIDE k'th row
+      for o in L_rest do
+        list6 := [op(list6),m[k,o]]:      #list of k'th row OUTSIDE chosen set
+      od:
+      #print(list6);
+      if c=1 and (1 in list6 or 2 in list6 or 3 in list6 or 4 in list6) then
+        d := 1:                           #1 a/b AND <>0 outside, possible ideal (d=1)
+      elif c=2 and 2 in list6 then
+        d := 1:                           #2 a/b AND 2 outside, possible ideal (d=1) NO BV
+      elif c=2 and (1 in list6 or 3 in list6 or 4 in list6) then
+        d := 2:                           #2 a/b AND <>0,2 outside, possible ideal (BV)
+      elif c=2 and 0 in list6 then
+        d := 1:                           #ONLY 0 outside, possible ideal (d=1) NO BV
+      else
+      fi:
+    fi:
+    list7 := [op(list7),[d,k]]:         (*list of ideal-status for each k-row, so for each row, we get a pair (d,k),
+                                          telling us if for the k'th row, there is either a possible ideal d=1, a
+                                          possible BV d=2 or an 'singular' incoming edge - ie. not saturated d=0*)
+    c := 0:
+    d := 0:
+    list5 := []:
+    list6 := []:
+  od:
+  for p in list7 do
+    if p[1]=0 then                      (*if there is a 0 in the line, it means, that there is an ingoing edge,
+                                          from which vertex it is the ONLY edge - so the set is not saturated - NO IDEAL*)
+      e := e+1:
+    elif p[1]=1 then                    (*if there are only 1's, we have a normal ideal - IDEAL*)
+      f := f+1:
+    else                                (*if a 2 is present, we have a BV, we put this row-number in list8,
+                                          and will act upon it below - BV*)
+      list8 := [op(list8), p[2]]:
+    fi:
+  od:
+
+  #print(L_index);
+
+  if e>0 then                            (*RETURN 0: There is NO IDEAL as described above, return empty list*)
+    return([]):
+  elif numelems(list8)>0 then            (*There is a 2 in list8, so there is a BV, then deal with it*)
+    for q from 1 to numelems(list8) do
+      A := convert(convert([seq(Sort(r), r in permute(list8,q))],set),list):
+      list9 := [op(list9), A]:           (*Here the magic happens - we permute the number of BV, such that we get all
+                                           possible combinations of the "chosen set" and the BV's, ie. in theoretical
+                                           language, for H, we have a set B_H consisting of S'es, and in this way, we
+                                           get all combinations of (H,S) need (ie. numelems(list8)^2 / |B_H|^2) AND
+                                           if there was a 'normal' ideal, we still get it, this is just [H,0], which
+                                           is covered here*)
+    od:
+    list9 := FlattenOnce(list9):
+    for s in list9 do                    (*We 'name' the ideals according to the permutations / BV's above*)
+      list10 := [op(list10),[L_index,s]]:
+    od:
+    return(list10):                      (*RETURN BV: The list of ideals as a result of BV, ie. return list of all
+                                           admissible pairs*)
+  else                                   (*RETURN NORMAL: If no BV, then NORMAL Ideal, return J_[[vertices],[0]]*)
+    return([[L_index,[0]]]):
+  fi:
+  print(L_index);
+end:
+IdealIndex / IdealStructure
+Here are two procedures: first one returns the number of hereditary/saturated sets (inkluding BV) corresponding to proper non-trivial ideals in C*(E). The second one, idealStructure, returns the ideal-structure of the C*(E), to be used in one of the following procedures. The procedures are alike, only the return is different.
+idealIndex := proc(m)                      (*Actually we feed it with itom(AR[x,y]), that returns
+                                             (m,int) but it seems to be able to 'find' the relevant
+                                             matrix*)
+  local listI,dim,i,j,k,a,d:
+  listI := []:
+  dim := RowDimension(m):
+  #print(m);
+  for i from 1 to dim-1 do
+    #print(i):
+    a := binomial(dim,i):                  #This binomial gives us the number of permutations of a set, used above
+    #print(a):
+    for j from 1 to a do
+      #print(j):
+      if hereditaryCheck(m,i,j)=0 then
+        #print(i,j):
+        d := saturatedCheck(m,i,j):
+        listI := [op(listI),d]:
+      fi:
+    od:
+  od:
+  #for k in listI do
+  #  print(k):
+  #od:
+  listI := FlattenOnce(listI):
+  #for k in listI do
+    #print(k):
+  #od:
+  #return(numelems(listI),listI);
+  return(numelems(listI));                 #Returns the number of ideals
+end:
+idealStructure := proc(m)
+  local listI,dim,i,j,k,a,d:
+  listI := []:
+  dim := RowDimension(m):
+  for i from 1 to dim-1 do
+    #print(i):
+    a := binomial(dim,i):                  #This binomial gives us the number of permutations of a set, used above
+    #print(a):
+    for j from 1 to a do
+      #print(j):
+      if hereditaryCheck(m,i,j)=0 then
+        #print(i,j):
+        d := saturatedCheck(m,i,j):
+        listI := [op(listI),d]:
+      fi:
+    od:
+  od:
+  #for k in listI do
+  #  print(k):
+  #od:
+  listI := FlattenOnce(listI):
+  #for k in listI do
+    #print(k):
+  #od:
+  #return(numelems(listI),listI);
+  #return(numelems(listI));
+  return(listI);                           #Returns all the admissible pairs for all ideals
+end:
+Ideal in matrix
+Procedure, that takes two ideals and returns 1 if the first is smaller than the second one, and 0 otherwise. It is reflecsive, ie. a<=a.
+isIdealSmaller := proc(a,b)
+  local i,j,h,s:
+  h := 0:
+  s := 0:
+  for i in a[1] do             #Walk through the second matrix, to find elements in H
+    if i in b[1] then
+    else
+      h := h + 1:
+    fi:
+  od:
+  #print(h):
+  for j in a[2] do             #Walk through the second matrix, to find elements in S
+    if j<>0 then
+      if j in Flatten(b) then
+      else
+        s := s + 1:
+      fi:
+    fi:
+  od:
+  #print(s):
+  if h=0 and s=0 then          #If both h,s zero, means first elm "smaller" than second elm
+    return(1):
+  else
+    return(0):
+  fi:
+end:
+Procedure, that takes a matrix and returns the ideallist, such that there is no-one smaller that the last one on the list, and no-one smaller than the second-last one on the list, except the last one etc; ie. ready for being put in a matrix
+orderIdealList := proc(m)
+  local L_wh,L_wh_temp,L_ord,i,j,c,el,ideal_no:
+  L_wh     := idealStructure(m):
+  ideal_no := idealIndex(m):
+  L_ord    := <0>:
+  c        := 0:
+  while ColumnDimension(L_wh)>0 do
+    for i from 1 to ColumnDimension(L_wh) do
+      el := L_wh[i]:
+      L_wh_temp := subsop(i=NULL, L_wh):
+      if member(1,[seq(isIdealSmaller(j,el), j in L_wh_temp)]) then
+      else
+        L_ord(1,ideal_no-c) := el:
+        c := c+1:
+        L_wh := subsop(i=NULL, L_wh):
+        break:
+      fi:
+    od:
+  od:
+  if L_ord[1]=0 then
+    return([]):
+  else
+    return(L_ord):
+  fi:
+end:
+K-theory
+K-theory of matrix
+Procedure, that takes a matrix and builds the SmithsForm and uses calK to return K-theory. K-theory is always returned as a double-list, where \Z:=1,\Z/2:=2,\Z/3=3 and so forth, and 0:=[] when it is all there is, else it is not included, if there is another group-structure present.
+kTheory := proc(m)
+  local A,a,Ano,ano,K_mT,K_SM,ktheory,i:
+  A   := partitionMatrix(m)[1]:
+  a   := partitionMatrix(m)[2]:
+  Ano := numelems(A):
+  ano := numelems(a):
+  if Ano>0 then
+    K_mT := transpose(buildK_matrix(m,A,a,Ano,ano,0)):
+    for i from 1 to Ano do
+      K_mT[i,i] := K_mT[i,i]-1:
+    od:
+    K_SM := (SmithForm(K_mT)):
+    #print(Ano,ano,K_SM):
+    ktheory := calK(K_SM,A,a,Ano,ano,0):
+  else
+    ktheory := calK([],A,a,Ano,ano,0):
+  fi:
+  return(ktheory):
+end:
+HELPING PROCEDURES FOR ABOVE:
+RowCol version K-theory procedure, that takes diagonal and matrix, and returns the analysis of the row and column for that particular diagonal-number.
+RowCol_K := proc(diagonal,matrix)
+  local Rw,Cl,dim,j,k:
+  dim   := RowDimension(matrix):
+  Rw := []:
+  Cl := []:
+  for k from 1 to dim do                        #details d'th row
+    if matrix[diagonal,k]<>0 then
+      Rw := [op(Rw), [k,matrix[diagonal,k]]]:   #rowdetails
+    fi:
+  od:
+  for j from 1 to dim do                        #details d'th col
+    if matrix[j,diagonal]<>0 then
+      Cl := [op(Cl), [j,matrix[j,diagonal]]]:   #coldetails
+    fi:
+  od:
+  return([Rw,Cl]):                              #use return, instead of global variables
+end:
+Procedure, that takes a matrix, and partitions it in A and \alpha parts, returns [A,\alpha] - index
+partitionMatrix := proc(m)
+  local A,a,dim,inf,RC,Rw,rw,i,j:
+  dim := RowDimension(m):
+  A := []:
+  a := []:
+  for i from 1 to dim do
+    inf:= 0:
+    RC := RowCol_K(i,m):
+    Rw := RC[1]:
+    rw := numelems(Rw):
+    for j in Rw do
+      if j[2]=2 then
+        inf := -1:
+      fi:
+    od:
+      if rw=0 or inf=-1 then
+        a := [op(a), i]:
+      else
+        A := [op(A), i]:
+      fi:
+  od:
+  return([A,a]):
+end:
+partitionMatrix_C := proc(m,d_C)
+  local B,b,inf,RC,Rw,rw,i,j:
+  B := []:
+  b := []:
+  for i in d_C do
+    inf:= 0:
+    RC := RowCol_K(i,m):
+    Rw := RC[1]:
+    rw := numelems(Rw):
+    for j in Rw do
+      if j[2]=2 then
+        inf := -1:
+      fi:
+    od:
+      if rw=0 or inf=-1 then
+        b := [op(b), i]:
+      else
+        B := [op(B), i]:
+      fi:
+  od:
+  return([B,b]):
+end:
+Helping-procedure for K-theory procedures. It takes dimension and a pair describing "the chosen set" and returns the "coordinates" for this set.
+findCoor := proc(dim,pair)
+  local Ix,n,i,c,coor:
+  n  := numelems(pair):
+  Ix := convert(convert([seq(Sort(i), i in permute(dim,n))],set),list):
+  c  := 0:
+  if n=0 then
+  else
+    for i from 1 to numelems(Ix) do
+      if Ix[i]=pair then
+        c := i:
+      fi:
+    od:
+    coor := hsIndex(dim,n,c):
+  fi:
+end:
+Procedure, that takes a matrix (with A and \alpha entries, ie. this can take ANY matrix of standard form, and ANY matrix build using the IDEAL-entries, ie. the first part of the result from idealStructure(m). If NO regular vertices, it returns empty list
+buildK_matrix := proc(m,A,a,Ano,ano,s)
+  local dim,K_m,Kdim,coor,i,j,c,p1,p2,k,l:
+  dim := RowDimension(m):
+  K_m := Matrix(Ano,dim+s):
+  #Kdim := [Ano,dim]:
+  coor := findCoor(dim,A):
+  c   := 1:
+  if Ano>0 then
+    for i from 1 to Ano do
+      for j from 1 to Ano do
+        p1 := coor[c,1]:
+        p2 := coor[c,2]:
+        if m[p1,p2]<2 then                    #Hvis der er 0 eller 1 pÃ¥ pladserne, sÃ¥ overfÃ¸r direkte
+          K_m[i,j]:= m[p1,p2]:
+          c := c+1:
+        else                                  #Dvs (da der ikke kan vÃ¦re 2) sÃ¥ trÃ¦kker vi en fra tallet (3->2,4->3 etc)
+          K_m[i,j]:= m[p1,p2]-1:
+          c := c+1:
+        fi:
+      od:
+    od:
+    for k from 1 to Ano do
+      for l from 1 to ano do
+        if m[A[k],a[l]]<2 then                #Hvis der er 0 eller 1 pÃ¥ pladserne, sÃ¥ overfÃ¸r direkte
+          K_m[k,l+Ano]:= m[A[k],a[l]]:
+        else                                  #Dvs (da der ikke kan vÃ¦re 2) sÃ¥ trÃ¦kker vi en fra tallet (3->2,4->3 etc)
+          K_m[k,l+Ano]:= m[A[k],a[l]]-1:
+        fi:
+      od
+    od:
+  fi:
+  return(K_m):
+end:
+buildK_matrix_C := proc(m,B,Bno,b,bno,ny,nyno)
+  local dim,K_m,BB,bb,nyny,GAM,gam,Z,coor,i1,i2,i3,i4,i5,i6,j1,j2,j3,j4,j5,j6,k1,k6,c,p1,p2:
+  dim := RowDimension(m):
+  #print(dim):
+  K_m := Matrix(Bno+nyno,Bno+bno+nyno):
+  #print(K_m):
+  #coor := findCoor(dim,A):
+
+  BB   := findCoor(dim,B):
+  #print(BB):
+  bb   := coor_C(B,b):
+  nyny := coor_C(B,ny):
+  GAM  := coor_C(ny,B):
+  gam  := coor_C(ny,b):
+  #print(gam):
+  Z    := findCoor(dim,ny):
+  #Print(Z):
+
+  c   := 1:
+  if Bno>0 then
+    for i1 from 1 to Bno do
+      for j1 from 1 to Bno do
+        p1 := BB[c,1]:
+        p2 := BB[c,2]:
+        if m[p1,p2]<2 then                    #Hvis der er 0 eller 1 pÃ¥ pladserne, sÃ¥ overfÃ¸r direkte
+          K_m[i1,j1]:= m[p1,p2]:
+          c := c+1:
+        else                                  #Dvs (da der ikke kan vÃ¦re 2) sÃ¥ trÃ¦kker vi en fra tallet (3->2,4->3 etc)
+          K_m[i1,j1]:= m[p1,p2]-1:
+          c := c+1:
+        fi:
+      od:
+    od:
+    for k1 from 1 to Bno do
+      K_m[k1,k1] := K_m[k1,k1]-1:
+    od:
+
+    #print(K_m,bb):
+
+    c := 1:
+    for i2 from 1 to Bno do
+      for j2 from 1 to bno do
+        p1 := bb[c,1]:
+        p2 := bb[c,2]:
+        if m[p1,p2]<2 then                    #Hvis der er 0 eller 1 pÃ¥ pladserne, sÃ¥ overfÃ¸r direkte
+          K_m[i2,j2+Bno]:= m[p1,p2]:
+          c := c+1:
+        else                                  #Dvs (da der ikke kan vÃ¦re 2) sÃ¥ trÃ¦kker vi en fra tallet (3->2,4->3 etc)
+          K_m[i2,j2+Bno]:= m[p1,p2]-1:
+          c := c+1:
+        fi:
+      od:
+    od:
+
+    c := 1:
+    for i3 from 1 to Bno do
+      for j3 from 1 to nyno do
+        p1 := nyny[c,1]:
+        p2 := nyny[c,2]:
+        if m[p1,p2]<2 then                    #Hvis der er 0 eller 1 pÃ¥ pladserne, sÃ¥ overfÃ¸r direkte
+          K_m[i3,j3+Bno+bno]:= m[p1,p2]:
+          c := c+1:
+        else                                  #Dvs (da der ikke kan vÃ¦re 2) sÃ¥ trÃ¦kker vi en fra tallet (3->2,4->3 etc)
+          K_m[i3,j3+Bno+bno]:= m[p1,p2]-1:
+          c := c+1:
+        fi:
+      od:
+    od:
+  fi:
+
+  c := 1:
+  if nyno>0 then
+    for i4 from 1 to nyno do
+      for j4 from 1 to Bno do
+        p1 := GAM[c,1]:
+        p2 := GAM[c,2]:
+        if m[p1,p2]<2 then                    #Hvis der er 0 eller 1 pÃ¥ pladserne, sÃ¥ overfÃ¸r direkte
+          K_m[i4+Bno,j4]:= m[p1,p2]:
+          c := c+1:
+        else                                  #Dvs (da der ikke kan vÃ¦re 2) sÃ¥ trÃ¦kker vi en fra tallet (3->2,4->3 etc)
+          K_m[i4+Bno,j4]:= m[p1,p2]-1:
+          c := c+1:
+        fi:
+      od:
+    od:
+
+    c := 1:
+    for i5 from 1 to nyno do
+      for j5 from 1 to bno do
+        p1 := gam[c,1]:
+        p2 := gam[c,2]:
+        if m[p1,p2]<2 then                    #Hvis der er 0 eller 1 pÃ¥ pladserne, sÃ¥ overfÃ¸r direkte
+          K_m[i5+Bno,j5+Bno]:= m[p1,p2]:
+          c := c+1:
+        else                                  #Dvs (da der ikke kan vÃ¦re 2) sÃ¥ trÃ¦kker vi en fra tallet (3->2,4->3 etc)
+          K_m[i5+Bno,j5+Bno]:= m[p1,p2]-1:
+          c := c+1:
+        fi:
+      od:
+    od:
+
+    c := 1:
+    for i6 from 1 to nyno do
+      for j6 from 1 to nyno do
+        p1 := Z[c,1]:
+        p2 := Z[c,2]:
+        if m[p1,p2]<2 then                    #Hvis der er 0 eller 1 pÃ¥ pladserne, sÃ¥ overfÃ¸r direkte
+          K_m[i6+Bno,j6+Bno+bno]:= m[p1,p2]:
+          c := c+1:
+        else                                  #Dvs (da der ikke kan vÃ¦re 2) sÃ¥ trÃ¦kker vi en fra tallet (3->2,4->3 etc)
+          K_m[i6+Bno,j6+Bno+bno]:= m[p1,p2]-1:
+          c := c+1:
+        fi:
+      od:
+    od:
+    for k6 from 1 to nyno do
+      K_m[k6+Bno,k6+Bno+bno] := K_m[k6+Bno,k6+Bno+bno]-1:
+    od:
+  fi:
+
+
+  return(K_m):
+end:
+Procedure, that calculates the K-theory, according to theory, it takes either the empty list (SPECIAL CASE) and returns K-theory or takes the SmithForm needed and returns the K-theory to use in kTheory and kTheory_I.
+calK_o := proc(K_m,A,a,Ano,ano,s)
+  local coKer,ker,m,n,count,i,j,k,l:
+  coKer := []:
+  ker   := []:
+  count := 0:
+  if Ano=0 then
+    for i from 1 to (ano+s) do
+      coKer := [op(coKer),1]:
+    od:
+    ker := []:
+  else
+    m := RowDimension(K_m):
+    n := ColumnDimension(K_m):
+    for j from 1 to Ano do
+      if K_m[j,j]=1 then
+        count := count+1:
+      elif K_m[j,j]>1 then
+        coKer := [op(coKer),K_m[j,j]]:
+        count := count+1:
+      else
+        coKer := [op(coKer),1]:
+      fi:
+    od:
+    for k from 1 to ano do
+      coKer := [op(coKer),1]:
+    od:
+    for l from 1 to (n-count) do
+      ker := [op(ker),1]:
+    od:
+  fi:
+  return([coKer,ker]):
+end:
+calK := proc(K_m,A,a,Ano,ano,s)
+  local coKer,ker,m,n,count,i,j,k,kk,l:
+  coKer := []:
+  ker   := []:
+  count := 0:
+  if Ano=0 then
+    for i from 1 to (ano+s) do
+      coKer := [op(coKer),1]:
+    od:
+    ker := []:
+  else
+    m := RowDimension(K_m):
+    n := ColumnDimension(K_m):
+    for j from 1 to Ano do
+      if K_m[j,j]=1 then
+        count := count+1:
+      elif K_m[j,j]>1 then
+        coKer := [op(coKer),K_m[j,j]]:
+        count := count+1:
+      else
+        coKer := [op(coKer),1]:
+      fi:
+    od:
+    for k from 1 to ano do
+      coKer := [op(coKer),1]:
+    od:
+    for kk from 1 to s do
+      coKer := [op(coKer),1]:
+    od:
+    for l from 1 to (n-count) do
+      ker := [op(ker),1]:
+    od:
+  fi:
+  return([coKer,ker]):
+end:
+calK_C := proc(K_m,B,Bno,b,bno,ny,nyno)
+  local coKer,ker,m,n,count,i,j,k,kk,l:
+  coKer := []:
+  ker   := []:
+  count := 0:
+  if Bno=0 and nyno=0 then
+    for i from 1 to bno do
+      coKer := [op(coKer),1]:
+    od:
+    ker := []:
+  else
+    m := RowDimension(K_m):
+    n := ColumnDimension(K_m):
+    for j from 1 to (Bno+nyno) do
+      if K_m[j,j]=1 then
+        count := count+1:
+      elif K_m[j,j]>1 then
+        coKer := [op(coKer),K_m[j,j]]:
+        count := count+1:
+      else
+        coKer := [op(coKer),1]:
+      fi:
+    od:
+    for k from 1 to bno do
+      coKer := [op(coKer),1]:
+    od:
+    for l from 1 to (n-count) do
+      ker := [op(ker),1]:
+    od:
+  fi:
+  return([coKer,ker]):
+end:
+Procedure, that takes AR and returns an array, where all the rows in AR are placed in the array according to, which combination of Ideal-number and K-theory they have (1. elm in each row of Array in form [#I,K-theory (f.eks.[[1,1],[]]) ] SUPERSIDES idealInArray to be used in Merge().
+indexIK := proc(ar)
+  local ar_temp,ar_id_temp,ar_id,m_temp,c,cc,r,s,i,j,k,ll:
+  ar_temp    := <0>:
+  ar_id_temp := <0>:
+  ar_id      := <0>:
+  c          := 1:
+  cc         := 1:
+  for i from 1 to RowDimension(ar) do
+    if ar[i,1]=0 then
+    else
+      m_temp := itom(ar[i,1])[1]:
+      ar_temp(i,1) := [idealIndex(m_temp),kTheory(m_temp)]:
+    fi:
+  od:
+  ar_id_temp(1,1) := ar_temp[1]:
+  ar_id_temp(1,2) := 1:
+  for j from 2 to RowDimension(ar_temp) do
+    for k from 1 to j-1 do
+      if ar_temp[k]=ar_temp[j] then
+        r := ColumnDimension(ar_id_temp[k]):
+        ar_id_temp(k,r+1) := j:
+        break:
+      else
+        c := c+1:
+      fi:
+    od:
+    if c=j then
+      ar_id_temp(j,1) := ar_temp[j]:
+      ar_id_temp(j,2) := j:
+    fi:
+    c := 1:
+  od:
+  for ll from 1 to RowDimension(ar_id_temp) do
+    if ar_id_temp[ll,1]<>0 then
+      ar_id(cc) := ar_id_temp[ll]:
+      cc := cc+1:
+    fi:
+  od:
+  return(ar_id):
+end:
+K-theory of ideals - kTheory_I_C
+Procedure, that takes a matrix and returns a n*n-matrix, where n is the number of ideals in m. On the diagonal of the matrix is the relevant K-theory, in the upper half of the matrix, is the ideal-structure of m.
+kTheory_I := proc(m)
+  local dim,idealOrd,iNO,matrixI,kT_list,m_temp,d,num,coor,K_cal,c,p1,p2,s,i,j,k,l,o,r:
+  dim      := ColumnDimension(m):
+  idealOrd := orderIdealList(m):                  #Orders the ideals in m
+  iNO      := numelems(idealOrd):
+  #print(iNO):
+  matrixI  := Matrix(iNO):
+  kT_list  := []:
+  #print(numelems(idealOrd)):
+  #print(idealOrd[1,1][2,1]):
+  if iNO=0 then                                   #Secures there are ideals in m, if not, NO RETURN
+  elif iNO=1 then
+    #print("yes",1):
+      c := 1:                                     #Sets c to 1, this is for use chosing "coordinates"
+      if idealOrd[1][2,1]=0 then                  #CASE 1: No BV, therefor simpel
+        #print(iNO,"NORMAL"):
+        d    := idealOrd[1][1]:                      #d := ideal-index, ie. [2,3] from [[2,3],[0]].
+        num  := numelems(d):                         #How many elms in d ("chosen set")
+        coor := findCoor(dim,d):                     #Finds "coordinates" using aux-proc
+        m_temp := Matrix(num):                       #Creates a temporary matrix with ideal-entries
+        for j from 1 to num do
+          for k from 1 to num do
+            p1          := coor[c,1]:
+            p2          := coor[c,2]:                #Builds the temp matrix at "chosen set"-entries
+            m_temp[j,k] := m[p1,p2]:
+            c           := c+1:
+          od:
+        od:
+        K_cal   := kTheory_I_aux(m_temp,0):          #Calculates K-theory, using aux functions
+        kT_list := [op(kT_list),K_cal]:
+      else                                         (*CASE 2: BV, therefor has to add dimension,
+                                                      when calculating K-theory, but nothing else.*)
+        #print(iNO,"CV"):
+        d    := idealOrd[1][1]:                       #d := ideal-index, ie. [2,3] from [[2,3],[0]].
+        num  := numelems(d):                          #How many elms in d ("chosen set")
+        coor := findCoor(dim,d):                      #Finds "coordinates" using aux-proc
+        m_temp := Matrix(num):                        #Creates a temporary matrix with ideal-entries
+        s    := numelems(idealOrd[1][2]):
+        for j from 1 to num do
+          for k from 1 to num do
+            p1          := coor[c,1]:
+            p2          := coor[c,2]:
+            m_temp[j,k] := m[p1,p2]:                  #Builds the temp matrix at "chosen set"-entries
+            c           := c+1:
+          od:
+        od:
+        K_cal := kTheory_I_aux(m_temp,s):             (*Calculates K-theory, using aux functions, now
+                                                        with right dimension (dim(m)+s) *)
+        kT_list := [op(kT_list),K_cal]:
+      fi:
+  else
+    #print("yes",2):
+    for i from 1 to iNO do
+      #print(i):
+      c := 1:                                     #Sets c to 1, this is for use chosing "coordinates"
+      if idealOrd[1,i][2,1]=0 then                #CASE 1: No BV, therefor easy
+        #print("stop",0):
+        d    := idealOrd[1,i][1]:                    #d := ideal-index, ie. [2,3] from [[2,3],[0]].
+        num  := numelems(d):                         #How many elms in d ("chosen set")
+        coor := findCoor(dim,d):                     #Finds "coordinates" using aux-proc
+        m_temp := Matrix(num):                       #Creates a temporary matrix with ideal-entries
+        for j from 1 to num do
+          for k from 1 to num do
+            p1          := coor[c,1]:
+            p2          := coor[c,2]:                #Builds the temp matrix at "chosen set"-entries
+            m_temp[j,k] := m[p1,p2]:
+            c           := c+1:
+          od:
+        od:
+        K_cal   := kTheory_I_aux(m_temp,0):          #Calculates K-theory, using aux functions
+        kT_list := [op(kT_list),K_cal]:
+      else                                         (*CASE 2: BV, therefor has to add dimension,
+                                                      when calculating K-theory, but nothing else.*)
+        #print(1):
+        d    := idealOrd[1,i][1]:                     #d := ideal-index, ie. [2,3] from [[2,3],[0]].
+        num  := numelems(d):                          #How many elms in d ("chosen set")
+        coor := findCoor(dim,d):                      #Finds "coordinates" using aux-proc
+        #print(coor,dim,d):
+        m_temp := Matrix(num):                        #Creates a temporary matrix with ideal-entries
+        #print(m_temp):
+        s    := numelems(idealOrd[1,i][2]):           #Measures how many vertices in the BV_admiss pair
+        #print(s):
+        for j from 1 to num do
+          for k from 1 to num do
+            p1          := coor[c,1]:
+            p2          := coor[c,2]:
+            m_temp[j,k] := m[p1,p2]:                  #Builds the temp matrix at "chosen set"-entries
+            c           := c+1:
+          od:
+        od:
+        K_cal := kTheory_I_aux(m_temp,s):             (*Calculates K-theory, using aux functions, now
+                                                        with right dimension (dim(m)+s) *)
+        kT_list := [op(kT_list),K_cal]:
+      fi:
+    od:
+  fi:
+  for l from 1 to iNO do                              #Places K-theory in diagonal of matrixI
+    matrixI[l,l] := kT_list[l]:
+  od:
+  for o from iNO to 1 by -1 do                        (*Goes through idealOrd, and sees how the ideals are
+                                                        related, according to relation "<=" and places
+                                                        in matrixI*)
+    for r from o-1 to 1 by -1 do
+      if isIdealSmaller(idealOrd[1,o],idealOrd[1,r])=1 then
+      matrixI[r,o]:=1:
+      #print(matrixI):
+      fi:
+      #print(r,o):
+      #print(idealOrd[1,o]):
+    od:
+  od:
+  return(matrixI):
+end:
+Proc, that expands calculating the K-theory of the ideals and the corresponding idealstructure, but also calculates the K-theory of the quotient, first only if no BV, returns the matrix as we know it, but where before we had [ K_0,K_1 ]  for J_{H,S} we now get [ [ K_0,K_1 ] [ K_0,K_1] ] for J_{H,S} and for C^*(E)/J_{H,S}.
+kTheory_I_C := proc(m)
+  local dim,idealOrd,iNO,matrixI,kT_list,m_temp,m_temp_C,d,d_C,num,num_C,coor,coor_C,K_cal,K_cal_C,c,c_C,p1,p1_C,p2,p2_C,s,S,i,j,j_C,k,k_C,l,o,r,q:
+  dim      := ColumnDimension(m):
+  idealOrd := orderIdealList(m):                  #Orders the ideals in m
+  iNO      := numelems(idealOrd):
+  #print(iNO):
+  matrixI  := Matrix(iNO):
+  kT_list  := []:
+  #print(numelems(idealOrd)):
+  #print(idealOrd[1,1][2,1]):
+  if iNO=0 then                                   #Secures there are ideals in m, if not, NO RETURN
+  elif iNO=1 then
+    #print("yes",1):
+      c  := 1:
+      c_C := 1:                                   #Sets c to 1, this is for use chosing "coordinates"
+      if idealOrd[1][2,1]=0 then                  #CASE 1: No BV, therefor simpel
+        #print(iNO,"NORMAL"):
+
+        d    := idealOrd[1][1]:                      #d := ideal-index, ie. [2,3] from [[2,3],[0]].
+        num  := numelems(d):                         #How many elms in d ("chosen set")
+        coor := findCoor(dim,d):                     #Finds "coordinates" using aux-proc
+        m_temp := Matrix(num):                       #Creates a temporary matrix with ideal-entries
+        for j from 1 to num do
+          for k from 1 to num do
+            p1          := coor[c,1]:
+            p2          := coor[c,2]:                #Builds the temp matrix at "chosen set"-entries
+            m_temp[j,k] := m[p1,p2]:
+            c           := c+1:
+          od:
+        od:
+
+        d_C := convert({seq(i,i=1..dim)} minus convert(d,set),list):
+
+
+        K_cal   := kTheory_I_aux(m_temp,0):          #Calculates K-theory, using aux functions
+        K_cal_C := kTheory_I_aux_C(m,d_C,[]):
+        kT_list := [op(kT_list),[K_cal,K_cal_C]]:
+      else                                         (*CASE 2: BV, therefor has to add dimension,
+                                                      when calculating K-theory, but nothing else.*)
+        #print(iNO,"CV"):
+        d    := idealOrd[1][1]:                       #d := ideal-index, ie. [2,3] from [[2,3],[1]].
+        num  := numelems(d):                          #How many elms in d ("chosen set")
+        coor := findCoor(dim,d):                      #Finds "coordinates" using aux-proc
+        m_temp := Matrix(num):                        #Creates a temporary matrix with ideal-entries
+        s    := numelems(idealOrd[1][2]):             #Number of BV in S
+        S    := idealOrd[1][2]:                       #The set S to be used in kTheory_I_aux_C
+        for j from 1 to num do
+          for k from 1 to num do
+            p1          := coor[c,1]:
+            p2          := coor[c,2]:
+            m_temp[j,k] := m[p1,p2]:                  #Builds the temp matrix at "chosen set"-entries
+            c           := c+1:
+          od:
+        od:
+
+        d_C := convert({seq(i,i=1..dim)} minus convert(d,set),list):
+
+        K_cal := kTheory_I_aux(m_temp,s):             (*Calculates K-theory, using aux functions, now
+                                                        with right dimension (dim(m)+s) *)
+        K_cal_C := kTheory_I_aux_C(m,d_C,S):
+        kT_list := [op(kT_list),[K_cal,K_cal_C]]:
+      fi:
+  else
+    #print("yes",2):
+    for i from 1 to iNO do
+      #print(i):
+      c   := 1:                                     #Sets c to 1, this is for use chosing "coordinates"
+      c_C := 1:
+      if idealOrd[1,i][2,1]=0 then                #CASE 1: No BV, therefor easy
+        #print("stop",0):
+
+        d    := idealOrd[1,i][1]:                    #d := ideal-index, ie. [2,3] from [[2,3],[0]].
+        num  := numelems(d):                         #How many elms in d ("chosen set")
+        coor := findCoor(dim,d):                     #Finds "coordinates" using aux-proc
+        m_temp := Matrix(num):                       #Creates a temporary matrix with ideal-entries
+        for j from 1 to num do
+          for k from 1 to num do
+            p1          := coor[c,1]:
+            p2          := coor[c,2]:                #Builds the temp matrix at "chosen set"-entries
+            m_temp[j,k] := m[p1,p2]:
+            c           := c+1:
+          od:
+        od:
+
+        d_C := convert({seq(i,i=1..dim)} minus convert(d,set),list):
+
+
+        #print(m_temp,m_temp_C):
+        K_cal   := kTheory_I_aux(m_temp,0):          #Calculates K-theory, using aux functions
+        #print("before_C"):
+        K_cal_C := kTheory_I_aux_C(m,d_C,[]):
+        #print("after_C"):
+        kT_list := [op(kT_list),[K_cal,K_cal_C]]:
+      else                                         (*CASE 2: BV, therefor has to add dimension,
+                                                      when calculating K-theory, but nothing else.*)
+        #print(1):
+        d    := idealOrd[1,i][1]:                     #d := ideal-index, ie. [2,3] from [[2,3],[1]].
+        num  := numelems(d):                          #How many elms in d ("chosen set")
+        coor := findCoor(dim,d):                      #Finds "coordinates" using aux-proc
+        #print(coor,dim,d):
+        m_temp := Matrix(num):                        #Creates a temporary matrix with ideal-entries
+        #print(m_temp):
+        s    := numelems(idealOrd[1,i][2]):           #Measures how many vertices in the BV_admiss pair
+        S    := idealOrd[1,i][2]:                     #Elms in S of admissible pair for ideal
+        #print(s):
+        for j from 1 to num do
+          for k from 1 to num do
+            p1          := coor[c,1]:
+            p2          := coor[c,2]:
+            m_temp[j,k] := m[p1,p2]:                  #Builds the temp matrix at "chosen set"-entries
+            c           := c+1:
+          od:
+        od:
+
+        d_C := convert({seq(i,i=1..dim)} minus convert(d,set),list):
+        K_cal := kTheory_I_aux(m_temp,s):             (*Calculates K-theory, using aux functions, now
+                                                        with right dimension (dim(m)+s) *)
+        K_cal_C := kTheory_I_aux_C(m,d_C,S):
+        kT_list := [op(kT_list),[K_cal,K_cal_C]]:
+      fi:
+    od:
+  fi:
+  for l from 1 to iNO do                              #Places K-theory in diagonal of matrixI
+    matrixI[l,l] := kT_list[l]:
+  od:
+  for o from iNO to 1 by -1 do                        (*Goes through idealOrd, and sees how the ideals are
+                                                        related, according to relation "<=" and places
+                                                        in matrixI*)
+    for r from o-1 to 1 by -1 do
+      if isIdealSmaller(idealOrd[1,o],idealOrd[1,r])=1 then
+      matrixI[r,o]:=1:
+      #print(matrixI):
+      fi:
+      #print(r,o):
+      #print(idealOrd[1,o]):
+    od:
+  od:
+  return(matrixI):
+end:
+Aux. procedure, copy of kTheory, but takes also numelens(idealOrd[1,i][2]) in order to calculate K-theory of the right dimensional matrix
+kTheory_I_aux := proc(m,s)
+  local A,a,Ano,ano,K_mT,K_SM,ktheory,i:
+  A   := partitionMatrix(m)[1]:
+  a   := partitionMatrix(m)[2]:
+  Ano := numelems(A):
+  ano := numelems(a):
+  if Ano>0 then
+    K_mT := transpose(buildK_matrix(m,A,a,Ano,ano,s)):
+    #print(K_mT):
+    for i from 1 to Ano do
+      K_mT[i,i] := K_mT[i,i]-1:
+    od:
+    K_SM := (SmithForm(K_mT)):
+    #print(Ano,ano,K_SM):
+    ktheory := calK(K_SM,A,a,Ano,ano,s):
+  else
+    ktheory := calK([],A,a,Ano,ano,s):
+  fi:
+  return(ktheory):
+end:
+kTheory_I_aux_C := proc(m,d_C,S)    #original matrice, alle knuder, der ikke er i H, breaking vertice set for det ideal
+  local dim,B,Bno,BB,b,bno,bb,ny,nyno,nyny,GAM,gam,Z,b_temp,K_mT,K_SM,kTheory,i:
+  dim    := RowDimension(m):
+  B      := partitionMatrix_C(m,d_C)[1]:
+  b_temp := partitionMatrix_C(m,d_C)[2]:
+  ny     := []:
+  b      := []:
+  for i in b_temp do
+    if member(i,S) then
+      ny := [op(ny),i]:
+    else
+      b  := [op(b), i]:
+    fi:
+  od:
+  Bno     := numelems(B):
+  bno     := numelems(b):
+  nyno    := numelems(ny):
+  #print(Bno,nyno):
+  if Bno=0 and nyno=0 then
+    kTheory := calK_C([],B,Bno,b,bno,ny,nyno):
+  else
+    #print(B,Bno,b,bno,ny,nyno):
+    K_mT    := transpose(buildK_matrix_C(m,B,Bno,b,bno,ny,nyno)):
+    K_SM    := (SmithForm(K_mT)):
+    kTheory := calK_C(K_SM,B,Bno,b,bno,ny,nyno):
+  fi:
+  return(kTheory):
+end:
+Procedure, that takes two sets and creates the "coordinates" that is needed when investigating the arrows FROM a TO b. Ie, is it [1],[2,3], then the result is [[1,2],[1,3]]:
+coor_C := proc(a,b)
+  local L,i,j:
+  L := []:
+  for i in a do
+    for j in b do
+      L := [op(L), [i,j] ]:
+    od:
+  od:
+  return(L):
+end:
+invariant_IK := proc(m)
+  local mat,IK_liste,inv_IK,i:
+  mat := kTheory_I(m):                  #Find the ideal-structure/K-theory matrix we know
+  IK_liste := []:
+  for i from 1 to RowDimension(mat) do     #Extract the K-theory of the ideals
+    IK_liste := [op(IK_liste),mat[i,i]]:
+  od:
+  inv_IK := sort(IK_liste):
+  return(inv_IK):
+end:
+invariant_IK_C := proc(m)
+  local mat,IK_liste,inv_IK,i:
+  mat := kTheory_I_C(m):                  #Find the ideal-structure/K-theory matrix we know
+  IK_liste := []:
+  for i from 1 to RowDimension(mat) do     #Extract the K-theory of the ideals
+    IK_liste := [op(IK_liste),mat[i,i]]:
+  od:
+  inv_IK := sort(IK_liste):
+  return(inv_IK):
+  #return(IK_liste):
+end:
+finalInvariant_C := proc(id)
+  local m_temp, invariant_TOTAL:
+  m_temp := itom(id):
+  invariant_TOTAL := [idealIndex(m_temp),kTheory(m_temp),invariant_IK_C(m_temp)]:
+  return(invariant_TOTAL):
+end:
+indexIK_I := proc(ar)
+  local ar_temp,ar_id_temp,ar_id,m_temp,c,cc,r,s,i,j,k,ll:
+  ar_temp    := <0>:
+  ar_id_temp := <0>:
+  ar_id      := <0>:
+  c          := 1:
+  cc         := 1:
+  for i from 1 to RowDimension(ar) do
+    if ar[i,1]=0 then
+    else
+      m_temp := itom(ar[i,1])[1]:
+      #print("Op her??"):
+      ar_temp(i,1) := [idealIndex(m_temp),kTheory(m_temp),invariant_IK(m_temp)]:  #Here we NEED a return from invariant_IK
+    fi:
+  od:
+  ar_id_temp(1,1) := ar_temp[1]:
+  ar_id_temp(1,2) := 1:
+  for j from 2 to RowDimension(ar_temp) do
+    for k from 1 to j-1 do
+      if ar_temp[k]=ar_temp[j] then
+        r := ColumnDimension(ar_id_temp[k]):
+        ar_id_temp(k,r+1) := j:
+        break:
+      else
+        c := c+1:
+      fi:
+    od:
+    if c=j then
+      ar_id_temp(j,1) := ar_temp[j]:
+      ar_id_temp(j,2) := j:
+    fi:
+    c := 1:
+  od:
+  for ll from 1 to RowDimension(ar_id_temp) do
+    if ar_id_temp[ll,1]<>0 then
+      ar_id(cc) := ar_id_temp[ll]:
+      cc := cc+1:
+    fi:
+  od:
+  return(ar_id):
+end:
+indexIK_I_C := proc(ar)
+  local ar_temp,ar_id_temp,ar_id,m_temp,c,cc,r,s,i,j,k,ll:
+  ar_temp    := <0>:
+  ar_id_temp := <0>:
+  ar_id      := <0>:
+  c          := 1:
+  cc         := 1:
+  for i from 1 to RowDimension(ar) do
+    if ar[i,1]=0 then
+    else
+      m_temp := itom(ar[i,1])[1]:
+      #print("Op her??"):
+      ar_temp(i,1) := [idealIndex(m_temp),kTheory(m_temp),invariant_IK_C(m_temp)]:  #Here we NEED a return from invariant_IK
+    fi:
+  od:
+  ar_id_temp(1,1) := ar_temp[1]:
+  ar_id_temp(1,2) := 1:
+  for j from 2 to RowDimension(ar_temp) do
+    for k from 1 to j-1 do
+      if ar_temp[k]=ar_temp[j] then
+        r := ColumnDimension(ar_id_temp[k]):
+        ar_id_temp(k,r+1) := j:
+        break:
+      else
+        c := c+1:
+      fi:
+    od:
+    if c=j then
+      ar_id_temp(j,1) := ar_temp[j]:
+      ar_id_temp(j,2) := j:
+    fi:
+    c := 1:
+  od:
+  for ll from 1 to RowDimension(ar_id_temp) do
+    if ar_id_temp[ll,1]<>0 then
+      ar_id(cc) := ar_id_temp[ll]:
+      cc := cc+1:
+    fi:
+  od:
+  return(ar_id):
+end:
+Experiment
+Assisting procedures for iterative proces - moveID
+Procedure, that takes a matrix, and returns the base, for which this matrix must be calculated, when calculating ID, ie. this is ALWAYS n+1, if the matrix contains a number n>2, otherwise it is BASE3 per default. Works for up to 6 in matrix!!
+maxNinMatrix := proc(m)
+  local b,i,liste:
+  liste := []:
+  for i from 0 to 6 do
+    if member(i,m) then
+      liste := [op(liste), i]:
+    fi:
+    b := max(liste)+1;
+  od:
+  if b<4 then
+    return(3):
+  else
+    return(b):
+  fi:
+end:
+Procedure, that takes a matrix, and checks if BASE3 and DIM MAX 5 - Here we can adjust time, set DIM MAX 4 f.x. - then it takes either minimizei_ny if relevant, and returns the relevant ID. The function of this procedure is, that it takes the matrix that is the output of the move, then it checks if we can take minimizei_ny on it, and then it returs the ID that has to be put in one of the lists in the procedure moveID. Works for MAX 6 in matrix inherited from maxNinMatrix above.
+putMatrixIDinListe := proc(m)      (*tager output fra move, ser om dim>6 og hvilke elms der er i matricen etc,
+                                     og beregner relevante ID der skal i L_id i moveID, HUSK: virker for
+                                     MAX 6 i matrix *)
+  global ba:
+  local id_o,id_g,liste:
+  liste := []:
+  ba := maxNinMatrix(m):
+  if ba=3 and RowDimension(m)<6 then  #Hvis base 3 OG ikke for stor m, sÃ¥ kan vi tage minimizei_ny!!
+    id_o := mtoi(m,ba):
+    id_g := minimizei_ny(mtoi(m,ba)):
+    liste := [op(liste), id_o, id_g]:
+  else
+    id_o := mtoi(m,ba):
+    liste := [op(liste), id_o]:
+  fi:
+  return(liste)
+end:
+Procedure, that takes an ID and returns three lists: L_o, L_m and L_g. The procedure makes the relevant moves on the ID - DONE: NOW DIM>7!! Here we can adjust time, default is ALL MOVES if DIM<9,  and ONLY moveR if DIM>8, could be set to DIM>7 or even DIM>6 with good sense - resulting ID is put in L_o (original) AND if min-iso is calculated (ie. dim<6 or BASE=3 (see previous procedure)) it is put in L_g (generic). If min-iso is NOT calculated, ID is put in L_m. Elmns fra L_o,L_m and L_g can then be put into the array, if they are not already there (done in the koersel-procedures below) AND elms from L_g AND L_m can be brought on to the next koersel.
+moveID := proc(id)                 (*tager ID og returnerer tre lister: L_o, L_m og L_g, dvs. efter moves
+                                     lÃ¦gges resultatet som ID i L_o (original) og min-iso af resultatet
+                                     (hvis det er regnet (ie. dim<7 eller base=3 og der kan tages
+                                     minimizei_ny pÃ¥ det) lÃ¦gges i L_g (generic), Er der IKKE taget min-iso
+                                     pÃ¥ elm, lÃ¦gges det i L_m. Elms fra L_o, L_m og L_g kan
+                                     nu lÃ¦gges i AR hvis de ikke ligger der i forvejen, og elms fra L_g
+                                     OG L_m kan fÃ¸res videre til nÃ¦ste koersel.
+                                     *)
+  local b,dim,L_o,L_m,L_g,liste1,liste2,liste3,i,j,l,k,m,eM:
+  L_o   := []:                       #L_o til de elms, der er taget min-iso pÃ¥ og fundet et
+  L_m   := []:
+  L_g   := []:
+  dim   := id[1]:
+  b     := id[3]:
+  eM    := itom(id)[1]:
+  for j from 1 to dim do
+    RowCol(j,eM):
+    if dim>7 or b>4 then            #Hvis stor matrix (dim>8)/base>4 (indeholder elms 4,5,...) sÃ¥ KUN MoveR
+      l := moveR(j,eM):
+      if l<>NULL then
+        liste1 := putMatrixIDinListe(l):
+        if numelems(liste1)=1 then
+          L_m := [op(L_m), liste1[1]]:
+        elif liste1[1]<>liste1[2] then
+          L_o := [op(L_o), liste1[1]]:
+          L_g := [op(L_g), liste1[2]]:
+        else
+          L_g := [op(L_g), liste1[2]]:
+        fi:
+      fi:
+    else
+      l := moveR(j,eM):
+      if l<>NULL then
+        liste1 := putMatrixIDinListe(l):
+        if numelems(liste1)=1 then
+          L_m := [op(L_m), liste1[1]]:
+        elif liste1[1]<>liste1[2] then
+          L_o := [op(L_o), liste1[1]]:
+          L_g := [op(L_g), liste1[2]]:
+        else
+          L_g := [op(L_g), liste1[2]]:
+        fi:
+      fi:
+      k := moveO_INF(j,eM):
+      if k<>NULL then
+        liste2 := putMatrixIDinListe(k):
+        if numelems(liste2)=1 then
+          L_m := [op(L_m), liste2[1]]:
+        elif liste2[1]<>liste2[2] then
+          L_o := [op(L_o), liste2[1]]:
+          L_g := [op(L_g), liste2[2]]:
+        else
+          L_g := [op(L_g), liste2[2]]:
+        fi:
+      fi:
+      k := moveO(j,eM):
+      if k<>NULL then
+        liste2 := putMatrixIDinListe(k):
+        if numelems(liste2)=1 then
+          L_m := [op(L_m), liste2[1]]:
+        elif liste2[1]<>liste2[2] then
+          L_o := [op(L_o), liste2[1]]:
+          L_g := [op(L_g), liste2[2]]:
+        else
+          L_g := [op(L_g), liste2[2]]:
+        fi:
+      fi:
+      m := moveI_INF(j,eM):
+      if m<>NULL then
+        liste3 := putMatrixIDinListe(m):
+        if numelems(liste3)=1 then
+          L_m := [op(L_m), liste3[1]]:
+        elif liste3[1]<>liste3[2] then
+          L_o := [op(L_o), liste3[1]]:
+          L_g := [op(L_g), liste3[2]]:
+        else
+          L_g := [op(L_g), liste3[2]]:
+        fi:
+      fi:
+      m := moveI(j,eM):
+      if m<>NULL then
+        liste3 := putMatrixIDinListe(m):
+        if numelems(liste3)=1 then
+          L_m := [op(L_m), liste3[1]]:
+        elif liste3[1]<>liste3[2] then
+          L_o := [op(L_o), liste3[1]]:
+          L_g := [op(L_g), liste3[2]]:
+        else
+          L_g := [op(L_g), liste3[2]]:
+        fi:
+      fi:
+    fi:
+  od;
+  #L_id := FlattenOnce(L_id):
+  return(L_o,L_m,L_g):
+end:
+Procedure, that takes an array, and adds the array to the generic AR. This is done when we want to do calculations on bigger and bigger matrices. Normally one would start with ar2 in AR, then add ar3 to AR with this procedure
+arrayInArray := proc(b,ar)
+  local arR,j,o:
+  arR := RowDimension(ar):
+  for j from 1 to RowDimension(b) do
+    for o from 1 to ColumnDimension(b[j]) do
+      ar(j+arR,o) := b[j,o]
+    od:
+  od:
+  return(ar):
+end:
+Procedure, that takes an array, and builds a 1-dim array of lists of all the first elms in each row, ie. from ar2 a 1*45 dim array, for ar3 a 1*3411 dim array - ie. an array of lists of elms/ID
+buildList := proc(b)
+  local i,j,liste:
+  liste := <0>:
+  for i from 1 to RowDimension(b) do
+    liste(1,i) := [b[i,1]]:
+  od:
+  return(liste):
+end:
+buildList_INF := proc(b)
+  local i,j,liste,L_temp:
+  liste := <0>:
+  L_temp := []:
+  for i from 1 to RowDimension(b) do
+    for j from 1 to 1 do
+      if b[i,j]<>0 then
+        L_temp := [op(L_temp), b[i,j]]:
+      fi:
+    od:
+    liste(1,i) := L_temp:
+    L_temp := []:
+  od:
+  return(liste):
+end:
+Procedure, that takes an array, builds a list (see above) and adds it to LIST
+addToLIST := proc(b,li)
+  local arC,build,i:
+  arC := ColumnDimension(li):
+  build := buildList(b):
+  for i from 1 to ColumnDimension(build) do
+    li(i+arC) := build[1,i]:
+  od:
+  return(li):
+end:
+addToLIST_INF := proc(b,li)
+  local arC,build,i:
+  arC := ColumnDimension(li):
+  build := buildList_INF(b):
+  for i from 1 to ColumnDimension(build) do
+    li(i+arC) := build[1,i]:
+  od:
+  return(li):
+end:
+addToLIST_INF_g := proc(b,li)
+  local arC,build,l_temp,i,j:
+  arC := ColumnDimension(li):
+  build := buildList_INF(b):
+  l_temp := []:
+  for i from 1 to ColumnDimension(build) do
+    for j from 1 to numelems(build[i]) do
+      l_temp := [op(l_temp), build[i,j]]:
+    od:
+    li(i+arC) := l_temp:
+
+  od:
+  return(li):
+end:
+
+arrayToRead := proc(ar)
+  local d,arREAD:
+  d      := RowDimension(ar):
+  arREAD := ar[1..d,1..400]:
+  return(arREAD):
+end:
+Koersel for iterative proces
+Procedure, that initiates the experiment, by taking first elements from each row in AR, moves it, set moved ID's in AR, leave relevant moved ID's on generic LIST, merges superfluous rows in AR and deletes these elms from LIST as well.
+koersel_init := proc(ar,li)
+  local arC,arR,count,liste,L,L_m,L_g,e,i,j2,j3:
+  liste := []:
+  arC := ColumnDimension(ar):
+  arR := RowDimension(ar):
+  count := arC+1:
+  for i from 1 to arR do
+    e := ar[i,1]:
+    L := moveID(e):
+    L_m,L_g := L[2],L[3]:
+    for j2 in L_m do
+      if member(j2,ar[i]) then
+      else
+        ar(i,count) := j2:
+        liste := [op(liste), j2]:
+        count := count+1:
+      fi:
+    od:
+    for j3 in L_g do
+      if member(j3,ar[i]) then
+      else
+        ar(i,count) := j3:
+        liste := [op(liste), j3]:
+        count := count+1:
+      fi:
+    od:
+    count := arC+1:
+    li(1,i) := liste:
+    liste := []:
+  od:
+  return(ar,li):
+end:
+Procedure, that does the same as above, it just doesn't initiate the experiment. It takes LIST, moves on it, returns ID's to AR, relevant ID's to LIST, merges rows and deletes entries in LIST.
+koersel := proc(ar,li)
+  local a,arC,arR,count,liste,L,L_m,L_g,id_o,id_g,e,eM,i,k,j2,j3:
+  liste := []:
+  arC := ColumnDimension(ar):
+  arR := RowDimension(ar):
+  count := arC+1:
+  a := fopen("a_k_reg", 'WRITE', 'TEXT'):
+    writeline(a,"Koersel_reg:"):
+  fclose(a);
+  for i from 1 to ColumnDimension(li) do
+    if (i mod 2)=0 then
+      a := fopen("a_k_reg", 'APPEND', 'TEXT'):
+        writeline(a,convert(i,string)):
+      fclose(a);
+    fi:
+    for k from 1 to numelems(li[i]) do
+      if li[i]=[] then
+      else
+        e := li[i][k]:
+        L := moveID(e):
+        L_m,L_g := L[2],L[3]:
+        for j2 in L_m do
+          if member(j2,ar[i]) then
+          else
+            ar(i,count) := j2:
+            liste := [op(liste), j2]:
+            count := count+1:
+          fi:
+        od:
+        for j3 in L_g do
+        if member(j3,ar[i]) then
+          else
+            ar(i,count) := j3:
+            liste := [op(liste), j3]:
+            count := count+1:
+          fi:
+        od:
+      fi:
+    od:
+    count := arC+1:
+    li(i) := liste:
+    liste := []:
+  od:
+  return(ar,li):
+end:
+
+Merge for iterative proces
+Ny mergeAR() that merges rows in AR where en elm is in an earlier row. Also deletes the relevant entry in LIST, AND adds the elms to the earlier entry of LIST if it is not already there, so all LIST-elms get treated with correct moves.
+mergeAR_init := proc(ar,li)
+  local arC,arR,index_ik,liste_temp,container,container_ny,listN,count,c,i,j,k,ll,o,p,q,r,s:
+  arC := ColumnDimension(ar):
+  arR := RowDimension(ar):
+  count := arC+1:
+  container := []:
+  #c := 0:
+  index_ik := indexIK(ar):            #creates array, where elms in each line has equal K-theory/#-Ideal pattern
+  #print(index_ik):
+  liste_temp := []:
+  for i in index_ik do
+    for j from 2 to numelems(i) do
+      if i[j]<>0 then
+        liste_temp := [op(liste_temp),i[j]]:
+      fi:
+    od:
+    #print(liste_temp):
+    for k from 2 to numelems(liste_temp) do
+      for ll from 1 to k-1 do
+        #print(ar[liste_temp[k]]):
+        for o from 1 to arC do
+          if ar[liste_temp[k],o]<>0 and member(ar[liste_temp[k],o],ar[liste_temp[ll]]) then
+            container := [op(container),liste_temp[k],liste_temp[ll]]:
+            break:
+          fi:
+        od:
+      od:
+    od:
+    if numelems(container)>0 then
+      container_ny := convert(convert(container,set),list):
+      #print(container_ny):
+      for s from 2 to numelems(container_ny) do           #For each line that has to be merges with the first line
+        for p in ar[container_ny[s]] do                   #For each elm in that line
+          if p<>0 then                                    #If it is not a zero, then
+            ar(container_ny[1],count) := p:               #We add the elm to row of AR corresponding to first line in cont_ny
+            count := count+1:                             #We make sure the next elm is added at the next column in AR
+          fi:
+        od:
+        for q from 1 to arC do
+          ar(container_ny[s],q) := 0:                     #All elms in the row that has been added are cancelled (enough up to arC)
+        od:
+        listN := li[1,container_ny[1]]:                   #This is the LIST-elm, listN, that we merge the other LIST-elms into
+        #print(listN,container_ny[s],container_ny[1],"her"):
+        for r from 1 to numelems(li[1,container_ny[s]]) do #We go through all elms in the LIST-elm we want to merge into listN
+          if member(li[1,container_ny[s]][r],listN) then  #If the elm is NOT already in listN, we add it
+          else
+            listN := [op(listN),li[1,container_ny[s]][r]]:
+          fi:
+        od:
+        li(1,container_ny[1]) := listN:                   #We replace the LIST-elm with the new list listN
+        li(1,container_ny[s])  := []:                     #We empty the other LIST-elm, from which we have merged elms
+        #print(li[1,container_ny[1]]):
+      od:
+    fi:
+    #print(container):
+    count      := arC+1:
+    liste_temp := []:
+    container  := []:
+  od:
+  return(ar,li):
+end:
+mergeAR := proc(ar,li)
+  #global d:
+  local a,come,arC,arR,index_ik,liste_temp,alikeArray,alikeArray_ny,listN,count,mark,aR,aC,i,j,k,ll,o,p,pp,ppp,q,qq,r,rr,s,ss,t,z:
+  arC := ColumnDimension(ar):
+  arR := RowDimension(ar):
+  count := arC+1:
+  mark := 0:
+  come:=1:
+  #d := 0:
+  alikeArray := Array([]):
+  alikeArray_ny := Array([]):
+  index_ik := indexIK(ar):                     (*creates array, where elms in each line has equal K-theory/#-Ideal pattern, the rows
+                                                 in AR for each row in this array, will be refered to as "the selected rows" or just
+                                                 "the rows" in the following*)
+  #print(index_ik):
+  liste_temp := []:
+  a := fopen("a_m_reg", 'WRITE', 'TEXT'):
+    writeline(a,"Merge_reg:"):
+  fclose(a);
+  for i in index_ik do
+    if (come mod 2)=0 then
+      a := fopen("a_m_reg", 'APPEND', 'TEXT'):
+        writeline(a,convert(come,string)):
+      fclose(a);
+    fi:
+    come := come+1:
+    for j from 2 to numelems(i) do
+      if i[j]<>0 then
+        liste_temp := [op(liste_temp),i[j]]:
+      fi:
+    od:
+    #print(liste_temp):
+    for k from 2 to numelems(liste_temp) do     (*We go through the rows, and compare elms to earlier rows, breaks, if an elm is in an
+                                                  earlier row, since we only need one elm to appear in both rows. Then we store the
+                                                  number of these rows, and in the end, we merge all these rows with the one with the
+                                                  smallest index.*)
+      #print(k):
+      for ll from 1 to k-1 do
+        for o from 1 to arC do
+          if ar[liste_temp[k],o]<>0 and member(ar[liste_temp[k],o],ar[liste_temp[ll]]) then
+            aR := RowDimension(alikeArray):
+            aC := ColumnDimension(alikeArray):
+            if aC=0 then
+              alikeArray(1,1) := liste_temp[k]:
+              alikeArray(1,2) := liste_temp[ll]:
+              mark := 1:
+            elif aR=1 then
+              if member(liste_temp[k],alikeArray) or member(liste_temp[ll],alikeArray) then
+                alikeArray(1,aC+1) := liste_temp[k]:
+                alikeArray(1,aC+2) := liste_temp[ll]:
+                mark := 1:
+              fi:
+            else
+              for t from 1 to aR do
+                if member(liste_temp[k],alikeArray[t]) or member(liste_temp[ll],alikeArray[t]) then
+                  alikeArray(t,aC+1) := liste_temp[k]:
+                  alikeArray(t,aC+2) := liste_temp[ll]:
+                  mark := 1:
+                fi:
+              od:
+            fi:
+            if mark=0 then
+              alikeArray(aR+1,aC+1) := liste_temp[k]:
+              alikeArray(aR+1,aC+2) := liste_temp[ll]:
+            fi:                                   (*Do something here, ie. store k and ll to alikeArray, where we can add more indexes
+                                                    as we search more rows, but we also make sure, that it is only rows that are connected
+                                                    with identical elms, that occur on the same row of alikeArray*)
+            mark := 0:
+            break:
+          fi:
+        od:                                       (*Here go directly to next ll and then onto next k*)
+      od:
+    od:                                           (*It is HERE we want to merge all rows, that are in our list of rows where we have
+                                                    found identical elms in more that one row, ie. if there are x in row 2 and 3, and
+                                                    y in row 3 and 5, then we merge row 3 and 5 to row 2 and delete row 3 and 5,
+                                                    just as we have done so far - similarly with listN, BUT we also want to merge other
+                                                    rows, within the same row of indexIK, that are NOT connected to the first rows,
+                                                    for that we have created the alikeArray*)
+    #print(alikeArray):
+    if ColumnDimension(alikeArray)>0 then
+      if RowDimension(alikeArray)=1 then
+        alikeArray_ny := [convert(convert(alikeArray,set),Array)]:
+      elif RowDimension(alikeArray)>1 then
+        for z from 1 to RowDimension(alikeArray) do
+          alikeArray_ny(z) := convert(convert(alikeArray[z],set),Array):
+        od:
+      fi:
+      #return(alikeArray_ny):
+      for p in alikeArray_ny do                       #For each line in alikeArray_ny, we have to deal with non-zero rows
+        #print(p):
+        if p[1]<>0 then
+          for s from 2 to ColumnDimension(p) do       #For each line that has to be merges with the first line
+            for pp in ar[p[s]] do                     #For each elm in the row of AR, that has to be merged into the first one
+              if pp<>0 then
+                ar(p[1],count) := pp:                 #We add the elm to row of AR corresponding to first line in alikeArray_ny[p]
+                count := count+1:                     #We make sure the next elm is added at the next column in AR
+              fi:
+            od:
+            for q from 1 to arC do
+              ar(p[s],q) := 0:                        #All elms in the row that has been added are cancelled (enough up to arC)
+            od:
+            listN := li[p[1]]:                        #This is the LIST-elm, listN, that we merge the other LIST-elms into
+            #print(listN,p[s],p[1],"her"):
+            for r from 1 to numelems(li[p[s]]) do     #We go through all elms in the LIST-elm we want to merge into listN
+              if member(li[p[s]][r],listN) then       #If the elm is NOT already in listN, we add it
+              else
+                listN := [op(listN),li[p[s]][r]]:
+              fi:
+            od:
+            li(p[1]) := listN:                        #We replace the LIST-elm with the new list listN
+            li(p[s])  := []:                          #We empty the other LIST-elm, from which we have merged elms
+            #print(li[p[1]]):
+          od:
+        else
+          for ss from 3 to ColumnDimension(p) do      #For each line that has to be merges with the first line (second, since first 0!)
+            for ppp in ar[p[ss]] do                   #For each line that has to be merges with the first line
+              if ppp<>0 then
+                ar(p[2],count) := ppp:                #We add the elm to row of AR corresponding to first line in alikeArray_ny[p]
+                count := count+1:                     #We make sure the next elm is added at the next column in AR
+              fi:
+            od:
+            for qq from 1 to arC do
+              ar(p[ss],qq) := 0:                      #All elms in the row that has been added are cancelled (enough up to arC)
+            od:
+            listN := li[p[2]]:                        #This is the LIST-elm, listN, that we merge the other LIST-elms into
+            #print(listN,p[ss],p[2],"her"):
+            for rr from 1 to numelems(li[p[ss]]) do   #We go through all elms in the LIST-elm we want to merge into listN
+              if member(li[p[ss]][rr],listN) then     #If the elm is NOT already in listN, we add it
+              else
+                listN := [op(listN),li[p[ss]][rr]]:
+              fi:
+            od:
+            li(p[2])   := listN:                      #We replace the LIST-elm with the new list listN
+            li(p[ss])  := []:                         #We empty the other LIST-elm, from which we have merged elms
+            #print(li[p[1]]):
+          od:
+        fi:
+        count := arC+1:
+      od:
+    fi:
+    #print(i):
+    liste_temp := []:
+    alikeArray := Array([]):
+    alikeArray_ny := Array([]):
+  od:
+  return(ar,li):
+end:
+Reduce for iterative proces
+Procedure, that takes AR and LIST after mergeAR() and reduces both to lower dimension, easier to store in file. REPLACED COLUMNDIMENSION WITH NUMELEMS 27/6
+reduceAR_init := proc(ar,li)
+  local AR_ny,LIST_ny,liste_temp,l_temp,c,i,j,k:
+  AR_ny   := Array([]):                                  #Containers for new arrays, ie. for AR_ny and LIST_ny
+  LIST_ny := Array([]):
+  liste_temp := []:                                      #Errase duplicates, sorts the set and convert to list, always 0 first
+  c       := 0:
+  for i from 1 to RowDimension(ar) do
+    l_temp  := convert(sort(convert(ar[i],set)),list):   #Errase duplicates, sorts the set and convert to list, always 0 first
+    #print(l_temp):
+    if numelems(l_temp)=1 then                           #If there are only 0's in row, the l_temp variable has only 1 elms after errasing dublicates
+      c := c+1:
+    elif l_temp[1]=0 then                                (*First, if there is a zero on the first place, we fill the row in old AR into the new AR
+                                                           starting from place 2, if there is no zero, we do the same from place 1. Also, we take the
+                                                           corresponding entry from LIST and put it into LIST_ny - I think we need this temp list!!*)
+      for j from 2 to numelems(l_temp) do
+        AR_ny(i-c,j-1) := l_temp[j]:
+      od:
+      liste_temp     := [op(liste_temp),li[1,i]]:
+      LIST_ny(1,i-c) := FlattenOnce(liste_temp):
+    else
+      for k from 1 to numelems(l_temp) do
+        AR_ny(i-c,k) := l_temp[k]:
+      od:
+      liste_temp     := [op(liste_temp),li[1,i]]:
+      LIST_ny(1,i-c) := FlattenOnce(liste_temp):
+    fi:
+    liste_temp := []:
+  od:
+  return(AR_ny,LIST_ny):                                 (*Returns NEW AR,LIST. NEW STRUCTURE COMPARED TO INIT!! Here, when we then name the return
+                                                           of this procedure AR and LIST, AR=AR_ny and LIST=LIST_ny as we want, also the old AR and
+                                                           LIST are overwritten, so we can keep recalling the arrays AR and LIST since this makes
+                                                           the scripts more easy to read. Had the downside, that we cannot distinguish each call.*)
+end:
+reduceAR := proc(ar,li)
+  local a,AR_ny,LIST_ny,liste_temp,l_temp,c,i,j,k:
+  AR_ny   := Array([]):                                  #Containers for new arrays, ie. for AR_ny and LIST_ny
+  LIST_ny := Array([]):
+  liste_temp := []:                                      #temporary list, we need in setting elms in LIST_ny
+  c       := 0:
+  a := fopen("a_r_reg", 'WRITE', 'TEXT'):
+    writeline(a,"Reduce_reg:"):
+  fclose(a);
+  for i from 1 to RowDimension(ar) do
+    if (i mod 50)=0 then
+      a := fopen("a_r_reg", 'APPEND', 'TEXT'):
+        writeline(a,convert(i,string)):
+      fclose(a);
+    fi:
+    l_temp  := convert(sort(convert(ar[i],set)),list):   #Errase duplicates, sorts the set and convert to list, always 0 first
+    if numelems(l_temp)=1 then                    #If there are only 0's in row, the l_temp variable has only 1 elms after errasing dublicates
+      c := c+1:
+    elif l_temp[1]=0 then                                (*First, if there is a zero on the first place, we fill the row in old AR into the new AR
+                                                           starting from place 2, if there is no zero, we do the same from place 1. Also, we take the
+                                                           corresponding entry from LIST and put it into LIST_ny - I think we need this temp list!!*)
+      for j from 2 to numelems(l_temp) do
+        AR_ny(i-c,j-1) := l_temp[j]:
+      od:
+      liste_temp     := [op(liste_temp),li[i]]:
+      LIST_ny(1,i-c) := FlattenOnce(liste_temp):
+    else
+      for k from 1 to numelems(l_temp) do
+        AR_ny(i-c,k) := l_temp[k]:
+      od:
+      liste_temp     := [op(liste_temp),li[i]]:
+      LIST_ny(1,i-c) := FlattenOnce(liste_temp):
+    fi:
+    liste_temp := []:
+  od:
+  return(AR_ny,LIST_ny):                                 (*Returns NEW AR,LIST. NEW STRUCTURE COMPARED TO INIT!! Here, when we then name the return
+                                                           of this procedure AR and LIST, AR=AR_ny and LIST=LIST_ny as we want, also the old AR and
+                                                           LIST are overwritten, so we can keep recalling the arrays AR and LIST since this makes
+                                                           the scripts more easy to read. Had the downside, that we cannot distinguish each call.*)
+end:
+Additional procedures, used for various analysis and more, not necessary for running of experiment
+Procedure, that takes an array, and returns how many lines there are with n ideals in each element (based on first elm in row!)
+idealNumberList := proc(ar)
+  local K,L,i:
+  K := idealInArray(ar):
+  L := []:
+  for i in K do
+    L := [op(L), numelems(i)]:
+  od:
+  return(L):
+end:
+Procedure, that takes the array produced by indexIK, indexIK_I or indexIK_I_C and returns the IK-index, ie. [#I,K_0,K_1]  OR _C version, that is much bigger!! and how many elms have this particular structure.
+numberIKlist := proc(ar)
+  local listeKI,c,i,j:
+  listeKI := []:
+  c := 0:
+  for i from 1 to RowDimension(ar) do
+    for j from 2 to ColumnDimension(ar[1]) do
+      if ar[i][j]<>0 then
+        c := c+1:
+      fi:
+    od:
+    listeKI := [op(listeKI),[ar[i][1],c]]:
+    c := 0:
+  od:
+  return(listeKI):
+end:
+crossArray := proc(ar1,ar2)
+  local L,l,c,cc,i,j,k,ll:
+  c  := 0:
+  cc := 0:
+  l  := []:
+  L  := []:
+  for i from 1 to RowDimension(ar1) do
+    for j from 1 to RowDimension(ar2) do
+        if member(ar2[j,1],ar1[i]) then
+          c := c+1:
+          #l := [op(l),ar1[i,1]]:
+        fi:
+    od:
+    if c>1 then
+      cc := cc+1:
+      #L  := [op(L), l]:
+    fi:
+    c := 0:
+    #l := []:
+  od:
+  return(cc):
+end:
+mergeAR_sol := proc(A,B)
+  local l_temp,dim,c,i,j,k,ll,m:
+  l_temp := []:
+  dim    := ColumnDimension(B):
+  c      := 1:
+  for i from 1 to RowDimension(A) do
+    for j from 1 to RowDimension(B) do
+      if B[j,1]<>0 then
+        if member(B[j,1],A[i]) then
+          l_temp := [op(l_temp),j]:
+        fi:
+      fi:
+    od:
+    if numelems(l_temp)>1 then
+      for k from 2 to numelems(l_temp) do
+        for ll from 1 to dim do
+          if B[l_temp[k],ll]<>0 then
+            B(l_temp[1],dim+c) := B[l_temp[k],ll]:
+            B(l_temp[k],ll) := 0:
+            c := c+1:
+          fi:
+        od:
+      od:
+    fi:
+    l_temp := []:
+    c      := 1:
+  od:
+  return(B):
+end:
+reduceAR_sol := proc(ar)
+  local a,AR_ny,l_temp,c,i,j,k:
+  AR_ny   := Array([]):                                  #temporary list, we need in setting elms in LIST_ny
+  c       := 0:
+  for i from 1 to RowDimension(ar) do
+    l_temp  := convert(sort(convert(ar[i],set)),list):   #Errase duplicates, sorts the set and convert to list, always 0 first
+    if numelems(l_temp)=1 then                           #If there are only 0's in row, the l_temp variable has only 1 elms after errasing dublicates
+      c := c+1:
+    elif l_temp[1]=0 then                                (*First, if there is a zero on the first place, we fill the row in old AR into the new AR
+                                                           starting from place 2, if there is no zero, we do the same from place 1. Also, we take the
+                                                           corresponding entry from LIST and put it into LIST_ny - I think we need this temp list!!*)
+      for j from 2 to numelems(l_temp) do
+        AR_ny(i-c,j-1) := l_temp[j]:
+      od:
+    else
+      for k from 1 to numelems(l_temp) do
+        AR_ny(i-c,k) := l_temp[k]:
+      od:
+    fi:
+  od:
+  return(AR_ny):                                         (*Returns NEW AR,LIST. NEW STRUCTURE COMPARED TO INIT!! Here, when we then name the return
+                                                           of this procedure AR and LIST, AR=AR_ny and LIST=LIST_ny as we want, also the old AR and
+                                                           LIST are overwritten, so we can keep recalling the arrays AR and LIST since this makes
+                                                           the scripts more easy to read. Had the downside, that we cannot distinguish each call.*)
+end:
+
+Main experiment
+currentdir();
+"/Users/tomasmedici/Dropbox/T - Studie/A_Speciale/Maple/z_filer/\
+
+  exp_17"
+currentdir("/Users/tomasmedici/Dropbox/T - Studie/A_Speciale/Maple/z_filer/exp_17");
+t0 := time();
+  ar2  := getArray(z_ar2):
+  AR   := Array(ar2):
+  LIST := <0>:
+
+  AR,LIST := koersel_init(AR,LIST):
+    RowDimension(AR),ColumnDimension(AR),ColumnDimension(LIST);
+  AR,LIST := mergeAR_init(AR,LIST):
+    RowDimension(AR),ColumnDimension(AR),ColumnDimension(LIST);
+  AR,LIST := reduceAR_init(AR,LIST):
+    RowDimension(AR),ColumnDimension(AR),ColumnDimension(LIST);
+
+  AR,LIST := koersel(AR,LIST):
+    RowDimension(AR),ColumnDimension(AR),ColumnDimension(LIST);
+  AR,LIST := mergeAR(AR,LIST):
+    RowDimension(AR),ColumnDimension(AR),ColumnDimension(LIST);
+  AR,LIST := reduceAR(AR,LIST):
+    RowDimension(AR),ColumnDimension(AR),ColumnDimension(LIST);
+
+  setArray(AR,AR_2iteration):
+  setLIST(LIST,LI_2iteration):
+t1 := time();
+
+  AR,LIST := koersel(AR,LIST):
+    RowDimension(AR),ColumnDimension(AR),ColumnDimension(LIST);
+  AR,LIST := mergeAR(AR,LIST):
+    RowDimension(AR),ColumnDimension(AR),ColumnDimension(LIST);
+  AR,LIST := reduceAR(AR,LIST):
+    RowDimension(AR),ColumnDimension(AR),ColumnDimension(LIST);
+
+  setArray(AR,AR_3iteration):
+  setLIST(LIST,LI_3iteration):
+t2a := time();
+
+  ar3  := getArray(z_ar3):
+  AR   := arrayInArray(ar3,AR):
+  LIST := addToLIST(ar3,LIST):
+    RowDimension(AR),ColumnDimension(AR),ColumnDimension(LIST);
+t2b := time();
+
+  setArray(AR,AR_additionOf3):
+  setLIST(LIST,LI_additionOf3):
+t3a := time();
+
+  AR,LIST := koersel(AR,LIST):
+    RowDimension(AR),ColumnDimension(AR),ColumnDimension(LIST);
+t3b := time();
+  AR,LIST := mergeAR(AR,LIST):
+    RowDimension(AR),ColumnDimension(AR),ColumnDimension(LIST);
+t3c := time();
+  AR,LIST := reduceAR(AR,LIST):
+    RowDimension(AR),ColumnDimension(AR),ColumnDimension(LIST);
+t3d := time();
+
+  setArray(AR,AR_4iteration):
+  setLIST(LIST,LI_4iteration):
+t4a := time();
+
+  AR,LIST := koersel(AR,LIST):
+    RowDimension(AR),ColumnDimension(AR),ColumnDimension(LIST);
+t4b := time();
+  AR,LIST := mergeAR(AR,LIST):
+    RowDimension(AR),ColumnDimension(AR),ColumnDimension(LIST);
+t4c := time();
+  AR,LIST := reduceAR(AR,LIST):
+    RowDimension(AR),ColumnDimension(AR),ColumnDimension(LIST);
+t4d := time();
+
+  AR_READ := arrayToRead(AR):
+  setArray(AR,AR_5iteration):
+  setLIST(LIST,LI_5iterationi):
+  setArray(AR_READ,AR_READ_5iteration):
+t5a := time();
+
+  AR,LIST := koersel(AR,LIST):
+    RowDimension(AR),ColumnDimension(AR),ColumnDimension(LIST);
+t5b := time();
+  AR,LIST := mergeAR(AR,LIST):
+    RowDimension(AR),ColumnDimension(AR),ColumnDimension(LIST);
+t5c := time();
+  AR,LIST := reduceAR(AR,LIST):
+    RowDimension(AR),ColumnDimension(AR),ColumnDimension(LIST);
+t5d := time();
+
+  AR_READ := arrayToRead(AR):
+  setArray(AR,AR_6iteration):
+  setLIST(LIST,LI_6iteration):
+  setArray(AR_READ,AR_READ_6iteration):
+t6 := time();
+"/Users/tomasmedici/Dropbox/T - Studie/A_Speciale/Maple/z_filer/\
+
+  exp_17"
+                         t0 := 2504.598
+                           21, 6, 21
+                           21, 10, 21
+                           20, 8, 20
+                           20, 24, 20
+                           20, 30, 20
+                           18, 24, 18
+                         t1 := 2541.031
+                          18, 133, 18
+                          18, 133, 18
+                          18, 133, 18
+                        t2a := 2692.334
+                        1429, 133, 1429
+                        t2b := 2705.839
+                        t3a := 2706.197
+                        1429, 703, 1429
+                        t3b := 4873.993
+                        1429, 1027, 1429
+                        t3c := 5019.037
+                        1213, 977, 1213
+                        t3d := 5089.021
+                        t4a := 5091.702
+Warning,  computation interrupted
+                        1213, 1641, 1213
+                        t4b := 5623.693
+Warning,  computation interrupted
+                        1213, 1641, 1213
+                        t4c := 5624.090
+Warning,  computation interrupted
+                        1213, 1641, 1213
+                        t4d := 5624.833
+Warning,  computation interrupted
+Warning,  computation interrupted
+                        t5a := 5628.945
+Warning,  computation interrupted
+                        1213, 1641, 1213
+                        t5b := 5629.395
+Warning,  computation interrupted
+                        1213, 1641, 1213
+                        t5c := 5630.130
+Warning,  computation interrupted
+                        1213, 1641, 1213
+                        t5d := 5630.889
+Warning,  computation interrupted
+Warning,  computation interrupted
+                         t6 := 5635.068
+Analysis of non gauge simple graph C*-algebras - AR_solution
+Accessing data from z_AR_final_full
+1. Final array: AR_final_analysis
+2. Array of which rows in final array have the same invariant (invariant shown first): inI_I_C
+3. List of numbers in each of these lines, ie. how many rows in final array have the same invariant (90 numbers): listeI_I_C
+4. List of the above, but with invarians, so invariant first, them number of rows in final array with this invariant: inI_I_num_C
+interface(rtablesize=50);
+                               10
+AR_final_analysis := getArray(z_AR_final_full):
+RowDimension(AR_final_analysis),ColumnDimension(AR_final_analysis);
+                            374, 800
+inI_I_C   := indexIK_I_C(AR_final_analysis):
+inI_I_num_C := numberIKlist(inI_I_C):
+listeI_I_C := []:
+for i from 1 to numelems(inI_I_num_C) do
+  listeI_I_C := [op(listeI_I_C),inI_I_num_C[i,2]]:
+od:
+print(listeI_I_C):
+[5, 3, 3, 14, 9, 5, 1, 1, 4, 4, 3, 4, 8, 4, 3, 10, 4, 3, 2, 4, 2,
+
+  4, 28, 6, 50, 6, 2, 2, 2, 2, 4, 2, 8, 2, 2, 2, 2, 2, 4, 6, 8,
+
+  2, 2, 2, 2, 2, 6, 4, 4, 4, 2, 2, 2, 1, 2, 1, 2, 1, 1, 3, 4, 2,
+
+  3, 12, 3, 2, 25, 3, 3, 2, 2, 2, 2, 4, 2, 3, 1, 1, 1, 1, 1, 1,
+
+  1, 2, 1, 1, 1, 1, 1, 1]
+AR_final_analysis[1][1..10];
+inI_I_C[1][1..17];
+listeI_I_C[1..90];
+inI_I_num_C[1..3];
+                 _rtable[18446744078453258350]
+[(2((11)())((((1)())((1)()))(((1)())((1)())))), 1, 3, 0, 0, 0, 0,
+
+  0, 0, 17, 0, 0, 0, 0, 0, 0, 0]
+[5, 3, 3, 14, 9, 5, 1, 1, 4, 4, 3, 4, 8, 4, 3, 10, 4, 3, 2, 4, 2,
+
+  4, 28, 6, 50, 6, 2, 2, 2, 2, 4, 2, 8, 2, 2, 2, 2, 2, 4, 6, 8,
+
+  2, 2, 2, 2, 2, 6, 4, 4, 4, 2, 2, 2, 1, 2, 1, 2, 1, 1, 3, 4, 2,
+
+  3, 12, 3, 2, 25, 3, 3, 2, 2, 2, 2, 4, 2, 3, 1, 1, 1, 1, 1, 1,
+
+  1, 2, 1, 1, 1, 1, 1, 1]
+ [[[2, [[1, 1], []],
+
+   [[[[1], []], [[1], []]], [[[1], []], [[1], []]]]], 5], [[2,
+
+   [[1, 1], [1]],
+
+   [[[[1], [1]], [[1], []]], [[[1], []], [[1], [1]]]]], 3],
+
+   [[1, [[1], []], [[[[1], []], [[1], [1]]]]], 3]]
+Procedures for data processing
+Proc to take an ideal #, and list the pair: (row-number in inI_I_C, # of rows in AR_final_analysis with this structure)
+idealNOfromList := proc(no)
+  local P,i:
+  P := []:
+  for i from 1 to 90 do
+    if inI_I_C[i][1][1]=no then
+      P := [op(P), [i,listeI_I_C[i]]]:
+    fi:
+  od:
+  return(P):
+end:
+Proc to take an invarians-number (1-90), and list the rownumber in AR_final_analysis, that has this invarians.
+searchInvarians := proc(no)
+  local N,i:
+  N := []:
+  for i from 2 to ColumnDimension(inI_I_C[no]) do
+    if inI_I_C[no][i]<>0 then
+      N := [op(N), inI_I_C[no][i]]:
+    fi:
+  od:
+  return(N):
+end:
+Proc to take in invarians-number (1-90) and list first the invarians, then the first matrix from each of the rows,  and the row number, in order to make comparison
+compareMatrix := proc(no)
+  local mList,rowNo,i:
+  mList := [inI_I_C[no][1]]:
+  rowNo := searchInvarians(no):
+  for i in rowNo do
+    mList := [op(mList),[itom(AR_final_analysis[i][1])[1],i]]:
+  od:
+  return(mList):
+end:
+compareMatrix_ADV := proc(no)
+  local mList,rowNo,m,i:
+  mList := [inI_I_C[no][1]]:
+  rowNo := searchInvarians(no):
+  for i in rowNo do
+    m     := itom(AR_final_analysis[i][1])[1]:
+    mList := [op(mList),[kTheory_I_C(m),m,i]]:
+  od:
+  return(mList):
+end:
+Proc to take listeI_I_C of how many rows of a certain invarians AR_final_analysis has AND a number X, to give back which invarians-numbers have X many rows in them.
+findLine := proc(l,no)
+  local liste,i:
+  liste := []:
+  for i from 1 to numelems(l) do
+    if l[i]=no then
+      liste := [op(liste), i]:
+    fi:
+  od:
+  return(liste):
+end:
+Proc to take number, x, and return the invarians of all the rows in inI_I_C, where each line has more that x rows in them
+invariansNO := proc(no)
+  local NO,NO_I,i:
+  NO   := []:
+  NO_I := []:
+    for i from 1 to numelems(listeI_I_C) do
+      if listeI_I_C[i]>no then
+        NO   := [op(NO), inI_I_num_C[i]]:
+        NO_I := [op(NO_I), inI_I_num_C[i][1,1]]:
+      fi:
+    od:
+  return(NO,NO_I):
+end:
+Proc, that takes a list of all the matrices of a certain invarians, where we also have the 'ideal-structure-matrix', and returns if this class can be split into two. WORKS WHEN 2 IDEALS, ie. name finerClass_2
+finerClass_2 := proc(liste)
+  local M,N,i:
+  M,N := [],[]:
+  for i from 2 to numelems(liste) do
+    if liste[i,1][1,2]=0 then
+      M := [op(M),liste[i,3]]:
+    else
+      N := [op(N),liste[i,3]]:
+    fi:
+  od:
+  return(M,N):
+end:
+Proc, that takes a list found by findLine, ie. a list of which invarians-number has X many rows in them, and returns all these sets of X elements, but with the relevant matrices and row number of AR_fin - very informative - see example below
+findMatrice2 := proc(l)
+  local id,idM,K,M,i,j,k:
+  K := []:
+  M := []:
+  for i in l do
+    for j from 2 to ColumnDimension(inI_I_C[i]) do:
+      if inI_I_C[i][j]<>0 then
+        id := AR_final_analysis[inI_I_C[i][j],[1][1]]:
+        idM := itom(id)[1]:
+        k  := inI_I_C[i][j]:
+        K := [op(K), [idM,k]]:
+      fi:
+    od:
+    M := [op(M), K]:
+    K := []:
+  od:
+  return(M):
+end:
+Analysis of all invariants, ordered by number of gauge invariant ideals in corresponding classes
+Analyse 1 ideal - DONE
+idealNOfromList(1);
+[[3, 3], [4, 14], [6, 5], [8, 1], [20, 4], [25, 50], [43, 2],
+
+  [53, 2], [55, 2], [57, 2], [59, 1], [61, 4], [67, 25], [69, 3],
+
+  [72, 2]]
+ANALYSIS 1_25 - 50 rÃ¦kker. STATUS:
+Result (according to SÃ¸ren):
+Matrix([[ 2 , 2 , 1 ],
+        [ 2 , 2 , 0 ],
+        [ 1 , 0 , 0 ]]):
+Q: Of the invariants that has many rows (above x) in AR_fin with this invarians, how many ideals do they have:
+Script: We use the procedure invariansNO to see this.
+invariansNO(10);
+[[[1, [[1, 1], []], [[[[1], []], [[1], []]]]], 14], [[2,
+
+  [[1, 1, 1], []],
+
+  [[[[1, 1], []], [[1], []]], [[[1], []], [[1, 1], []]]]], 28],
+
+  [[1, [[1, 1, 1], []], [[[[1], []], [[1, 1], []]]]], 50], [[2,
+
+  [[1, 1, 1], [1]],
+
+  [[[[1, 1], [1]], [[1], []]], [[[1], [1]], [[1, 1], []]]]], 12],
+
+  [[1, [[1, 1, 1], [1]], [[[[1], [1]], [[1, 1], []]]]], 25]],
+
+  [1, 2, 1, 2, 1]
+A: With more that 15 rows with same invariants, they have either 1 or 2 ideals.
+C: Not a lot added information with extra invarians-info
+
+Q: Of these invariants, that 'cover' many rows each in AR_fin, can we make the classification any finer, using the 'ideal-structure-matrix' of K-theory build in kTheory_I_C?
+Script: From above we choose an element in liste_I_I_C, that 'cover' this (X) many rows, using findLine, it returns the corresponding linenumber in inI_I_C.  Then we use compareMatrix to get the X matrices and the overall invarians. BUT, then we use compareMatrix_ADV to get the 'ideal-structure-matrix' for each of the rows, and try to find a pattern.
+findLine(listeI_I_C,50);
+                              [25]
+b := searchInvarians(25);
+b := [41, 42, 47, 79, 80, 101, 102, 103, 104, 117, 123, 125, 126,
+
+  128, 129, 130, 131, 137, 138, 139, 140, 146, 147, 148, 149,
+
+  197, 199, 201, 228, 229, 230, 231, 232, 233, 234, 235, 334,
+
+  347, 354, 355, 356, 357, 358, 365, 368, 369, 370, 372, 373, 374
+
+  ]
+numelems(b);
+                               50
+matrixList_50_25 := compareMatrix(25);
+[[1,[[1,1,1],[]],[[[[1],[]],[[1,1],[]]]]],[_rtable[
+
+  18446744078333076534],41],[_rtable[18446744078333076774],42],
+
+  [_rtable[18446744078333077014],47],[_rtable[
+
+  18446744078333077254],79],[_rtable[18446744078333077494],80],
+
+  [_rtable[18446744078333077734],101],[_rtable[
+
+  18446744078333078214],102],[_rtable[18446744078333078454],103],
+
+  [_rtable[18446744078333078694],104],[_rtable[
+
+  18446744078333078934],117],[_rtable[18446744078333079174],123],
+
+  [_rtable[18446744078333079414],125],[_rtable[
+
+  18446744078333071478],126],[_rtable[18446744078333071958],128],
+
+  [_rtable[18446744078333072318],129],[_rtable[
+
+  18446744078333072558],130],[_rtable[18446744078333072798],131],
+
+  [_rtable[18446744078333073158],137],[_rtable[
+
+  18446744078333073398],138],[_rtable[18446744078333073638],139],
+
+  [_rtable[18446744078333073878],140],[_rtable[
+
+  18446744078333074118],146],[_rtable[18446744078333074358],147],
+
+  [_rtable[18446744078333074598],148],[_rtable[
+
+  18446744078333074838],149],[_rtable[18446744078333075078],197],
+
+  [_rtable[18446744078333075318],199],[_rtable[
+
+  18446744078330732662],201],[_rtable[18446744078330733022],228],
+
+  [_rtable[18446744078330733262],229],[_rtable[
+
+  18446744078330733502],230],[_rtable[18446744078330733742],231],
+
+  [_rtable[18446744078330733982],232],[_rtable[
+
+  18446744078330734222],233],[_rtable[18446744078330734462],234],
+
+  [_rtable[18446744078330734702],235],[_rtable[
+
+  18446744078330735062],334],[_rtable[18446744078330735302],347],
+
+  [_rtable[18446744078330735542],354],[_rtable[
+
+  18446744078330735902],355],[_rtable[18446744078330736142],356],
+
+  [_rtable[18446744078330736382],357],[_rtable[
+
+  18446744078330724470],358],[_rtable[18446744078330724710],365],
+
+  [_rtable[18446744078330724950],368],[_rtable[
+
+  18446744078330725190],369],[_rtable[18446744078330725430],370],
+
+  [_rtable[18446744078330725670],372],[_rtable[
+
+  18446744078330726030],373],[_rtable[18446744078330726270],374]]
+ matrixList_50_25_ADV := compareMatrix_ADV(25):
+M := []: for i from 2 to numelems(matrixList_50_25) do M := [op(M),matrixList_50_25[i,1]]; od: print(M):
+ [_rtable[18446744078449033574],_rtable[18446744078449033814],
+
+   _rtable[18446744078449034054],_rtable[18446744078449034294],
+
+   _rtable[18446744078449034534],_rtable[18446744078449034774],
+
+   _rtable[18446744078449035014],_rtable[18446744078449035254],
+
+   _rtable[18446744078449035494],_rtable[18446744078449035734],
+
+   _rtable[18446744078449035974],_rtable[18446744078449036214],
+
+   _rtable[18446744078449036454],_rtable[18446744078449036814],
+
+   _rtable[18446744078449037054],_rtable[18446744078463385598],
+
+   _rtable[18446744078463385838],_rtable[18446744078463386078],
+
+   _rtable[18446744078463386318],_rtable[18446744078463386558],
+
+   _rtable[18446744078463386798],_rtable[18446744078463387038],
+
+   _rtable[18446744078463387278],_rtable[18446744078463387518],
+
+   _rtable[18446744078463387758],_rtable[18446744078463387998],
+
+   _rtable[18446744078463388238],_rtable[18446744078463388478],
+
+   _rtable[18446744078463388718],_rtable[18446744078463388958],
+
+   _rtable[18446744078463389198],_rtable[18446744078463389438],
+
+   _rtable[18446744078463381502],_rtable[18446744078463381742],
+
+   _rtable[18446744078463381982],_rtable[18446744078463382222],
+
+   _rtable[18446744078463382462],_rtable[18446744078463382702],
+
+   _rtable[18446744078463382942],_rtable[18446744078463383182],
+
+   _rtable[18446744078463383422],_rtable[18446744078463383662],
+
+   _rtable[18446744078463383902],_rtable[18446744078463384142],
+
+   _rtable[18446744078463384382],_rtable[18446744078463384622],
+
+   _rtable[18446744078463384862],_rtable[18446744078463385102],
+
+   _rtable[18446744078463385342],_rtable[18446744078488453118]]
+A: Of the 16 rows, that has 1 ideal, they obviously have the same structure
+
+
+ANALYSIS 1_69 - 3 rÃ¦kker. (GL. RESULTAT: alle S.I. CLASS)
+ANALYSIS 1_4 - 14 rÃ¦kker. STATUS:
+ANALYSIS 1_3 - 3 rÃ¦kker. STATUS:
+ANALYSIS 1_8 - 1 rÃ¦kke. STATUS: CLASS
+ANALYSIS 1_6 - 5 rÃ¦kker. STATUS:
+ANALYSIS 1_20 - 4 rÃ¦kker. STATUS:
+ANALYSIS 1_43 - 2 rÃ¦kker. STATUS:
+ANALYSIS 1_53 - 2 rÃ¦kker. STATUS:
+ANALYSIS 1_55 - 2 rÃ¦kker. STATUS:
+ANALYSIS 1_57 - 2 rÃ¦kker. STATUS:
+ANALYSIS 1_59 - 1 rÃ¦kker. STATUS: CLASS
+ANALYSIS 1_61 - 4 rÃ¦kker. STATUS:
+ANALYSIS 1_67 - 25 rÃ¦kker. STATUS:
+ANALYSIS 1_72 - 2 rÃ¦kker. STATUS:
+Analyse 2 idealer - DONE
+Analyse 3 idealer - DONE
+Analyse 4 idealer - DONE
+Analyse 5 idealer - DONE
+Analyse 6 idealer - DONE
+Analyse 7 idealer - EMPTY
+Analyse 8 idealer - DONE
